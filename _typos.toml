@@ -1,0 +1,5 @@
+[default]
+extend-ignore-identifiers-re = []
+
+[default.extend-words]
+eska = "eska"
