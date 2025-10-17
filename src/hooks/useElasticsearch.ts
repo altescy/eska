@@ -1,40 +1,10 @@
 import React from "react";
-import type { ElasticsearchIndex } from "@/lib/elasticsearch";
-
-export interface ElasticsearchBasicAuth {
-  type: "basic";
-  username: string;
-  password: string;
-}
-
-export type ElasticsearchAuth = ElasticsearchBasicAuth;
-
-export interface ElasticsearchConfig {
-  host: string;
-  auth: ElasticsearchAuth;
-}
-
-const quote = (str: string) => encodeURIComponent(str);
-
-export interface ElaseticsearchSearchResponse<T = JSONValue> {
-  took: number;
-  timed_out: boolean;
-  _shards: {
-    total: number;
-    successful: number;
-    skipped: number;
-    failed: number;
-  };
-  hits: {
-    total: { value: number; relation: string };
-    max_score: number | null;
-    hits: T[];
-  };
-}
-
-export interface ElasticsearchGetIndicesResponse {
-  [index: string]: ElasticsearchIndex;
-}
+import { quote } from "@/lib/elasticsearch";
+import type {
+  ElaseticsearchSearchResponse,
+  ElasticsearchConfig,
+  ElasticsearchGetIndicesResponse,
+} from "@/types/elasticsearch";
 
 export const useElasticsearch = (config: ElasticsearchConfig) => {
   const [isLoading, setIsLoading] = React.useState(false);

@@ -39,6 +39,8 @@ function createWindow() {
       webSecurity: false,
     },
     titleBarStyle: 'hiddenInset',
+    vibrancy: 'fullscreen-ui',
+    backgroundMaterial: 'acrylic',
   })
 
   // Test active push message to Renderer-process.

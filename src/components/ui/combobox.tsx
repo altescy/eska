@@ -37,9 +37,9 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 overflow-hidden">
-          <Command className="max-w-full">
-            <CommandInput placeholder="Search framework..." />
-            <CommandList className="max-w-full overflow-auto">
+          <Command className="w-full">
+            <CommandInput className="w-full" placeholder="Search framework..." />
+            <CommandList className="w-full overflow-auto">
               <CommandEmpty>No item found.</CommandEmpty>
               <CommandGroup className="max-w-full overflow-auto">
                 {items.map((item) => (

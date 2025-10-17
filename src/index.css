@@ -126,6 +126,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: rgba(255, 255, 255, 0.3);
   }
   button {
     cursor: pointer;

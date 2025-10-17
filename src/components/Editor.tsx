@@ -66,8 +66,21 @@ export const Editor = ({ language, value, readOnly, schemas, actions, onChange, 
     }
   }, [editor, actions]);
 
+  React.useEffect(() => {
+    monaco?.editor.defineTheme("eska", {
+      base: "vs",
+      inherit: true,
+      rules: [],
+      colors: {
+        "editor.background": "#00000000",
+      },
+    });
+    monaco?.editor.setTheme("eska");
+  }, [monaco]);
+
   return (
     <MonacoEditor
+      theme="eska"
       width="100%"
       height="100%"
       value={value}

@@ -8,9 +8,10 @@ import { Spinner } from "@/components/ui/spinner";
 import "@fontsource-variable/fira-code";
 import { Editor } from "@/components/Editor";
 import { useClipboard } from "@/hooks/useClipboard";
-import { type ElasticsearchGetIndicesResponse, useElasticsearch } from "@/hooks/useElasticsearch";
+import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { useMountEffect } from "@/hooks/useMountEffect";
 import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
+import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 
 const ELASTICSEARCH_HOST = import.meta.env.VITE_ELASTICSEARCH_HOST;
 const ELASTICSEARCH_USERNAME = import.meta.env.VITE_ELASTICSEARCH_USERNAME;
@@ -95,10 +96,10 @@ function App() {
   );
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
       <div className="w-full h-10 pl-20 shrink-0 flex items-center app-region-drag" />
-      <div className="w-full flex flex-1 px-3 pt-1 pb-3 overflow-hidden">
-        <div className="w-fit h-full flex flex-col pr-2 gap-1">
+      <div className="w-full flex flex-1 px-3 pt-1 pb-3 overflow-hidden text-gray-800">
+        <div className="w-fit h-full flex flex-col pr-2 gap-2">
           <Button variant="ghost" size="icon-lg" className="shrink-0">
             <Server />
           </Button>
@@ -113,8 +114,11 @@ function App() {
             <Settings />
           </Button>
         </div>
-        <PanelGroup direction="horizontal" className="flex w-full h-full bg-white rounded-xl p-3 gap-2">
-          <Panel className="w-full h-full flex flex-col bg-gray-50 p-3 rounded-lg shadow-lg">
+        <PanelGroup
+          direction="horizontal"
+          className="flex w-full h-full bg-[#ffffff40] backdrop-blur-3xl rounded-xl p-3 gap-2"
+        >
+          <Panel className="w-full h-full flex flex-col bg-[#ffffff80] backdrop-blur-3xl backdrop-brightness-150 p-3 rounded-lg shadow-lg">
             <PanelGroup direction="vertical" className="w-full h-full">
               <Panel className="w-full h-full flex gap-3">
                 <div className="flex-1 min-w-0">
@@ -126,7 +130,7 @@ function App() {
                     onChange={(value) => setQuery(value ?? "")}
                   />
                 </div>
-                <div className="w-fit h-full shrink-0 flex flex-col gap-1 items-center">
+                <div className="w-fit h-full shrink-0 flex flex-col gap-2 items-center text-gray-700">
                   <Button
                     variant="destructive"
                     size="icon"
@@ -138,12 +142,7 @@ function App() {
                   <Button variant="ghost" size="icon" onClick={handleFormatQuery}>
                     <Sparkles />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="mt-2"
-                    onClick={() => clipboardForQuery.copyToClipboard(query)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => clipboardForQuery.copyToClipboard(query)}>
                     {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
                   </Button>
                 </div>

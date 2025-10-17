@@ -1,32 +1,7 @@
 import { minimatch } from "minimatch";
+import type { ElasticsearchField, ElasticsearchIndexMapping } from "@/types/elasticsearch.js";
 
-export interface ElasticsearchField {
-  type: string;
-  index?: boolean;
-  source?: boolean;
-}
-
-export interface ElasticsearchIndexMapping {
-  _source?: {
-    excludes?: string[];
-  };
-  properties: {
-    [field: string]:
-      | {
-          properties?: ElasticsearchIndexMapping["properties"];
-        }
-      | {
-          type: string;
-          index?: boolean | string;
-        };
-  };
-}
-
-export interface ElasticsearchIndex {
-  aliases: { [alias: string]: JSONValue };
-  mappings: ElasticsearchIndexMapping;
-  settings: Record<string, JSONValue>;
-}
+export const quote = (str: string) => encodeURIComponent(str);
 
 export function generateElasticsearchQuerySchema(mapping?: ElasticsearchIndexMapping): JSONSchema {
   return {
