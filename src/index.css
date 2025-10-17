@@ -3,8 +3,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.darwin {
+.app-region-drag {
+  app-region: drag;
   --webkit-app-region: drag;
+
+  & button {
+    app-region: no-drag;
+    --webkit-app-region: no-drag;
+  }
 }
 
 @theme inline {
@@ -47,7 +53,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.972 0.0025 345.21);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -120,5 +126,8 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  button {
+    cursor: pointer;
   }
 }
