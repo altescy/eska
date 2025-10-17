@@ -8,7 +8,7 @@ export type ElasticsearchAuth = ElasticsearchBasicAuth;
 
 export interface ElasticsearchConfig {
   host: string;
-  auth: ElasticsearchAuth;
+  auth?: ElasticsearchAuth;
 }
 
 export interface ElasticsearchField {

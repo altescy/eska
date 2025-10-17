@@ -28,7 +28,7 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between flex items-center"
+            className="w-full justify-between flex items-center bg-transparent border-none rounded-none"
           >
             <div className="truncate">
               {key ? items.find((item) => item.key === key)?.label : placeholder || "Select item..."}
@@ -38,7 +38,7 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 overflow-hidden">
           <Command className="w-full">
-            <CommandInput className="w-full" placeholder="Search framework..." />
+            <CommandInput className="w-full" placeholder="Search item..." />
             <CommandList className="w-full overflow-auto">
               <CommandEmpty>No item found.</CommandEmpty>
               <CommandGroup className="max-w-full overflow-auto">

@@ -9,11 +9,14 @@ import type {
 export const useElasticsearch = (config: ElasticsearchConfig) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const headers = React.useMemo(() => {
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${btoa(`${config.auth.username}:${config.auth.password}`)}`,
-    };
+  const headers = React.useMemo((): Record<string, string> => {
+    if (config.auth?.type === "basic") {
+      return {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${btoa(`${config.auth.username}:${config.auth.password}`)}`,
+      };
+    }
+    return { "Content-Type": "application/json" };
   }, [config.auth]);
 
   const request = React.useCallback(

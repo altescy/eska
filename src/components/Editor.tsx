@@ -13,6 +13,7 @@ const DEFAULT_OPTIONS: MonacoAPI.editor.IStandaloneEditorConstructionOptions = {
   formatOnType: true,
   automaticLayout: true,
   stickyScroll: { enabled: false },
+  lineDecorationsWidth: 0,
   scrollbar: {
     vertical: "auto",
     horizontal: "auto",
