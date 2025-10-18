@@ -3,6 +3,14 @@ import React from "react";
 import { collectionsAtom } from "@/atoms/collections";
 import type { Collection } from "@/types/collection";
 
+const getCollectionTextForSearch = (collection: Collection) => {
+  const name = collection.name.toLowerCase();
+  const clusterName = collection.content.clusterName?.toLowerCase();
+  const indexName = collection.content.indexName?.toLowerCase();
+  console.log({ name, clusterName, indexName });
+  return [name, clusterName, indexName].filter(Boolean).join(" ");
+};
+
 export const useCollections = () => {
   const [collections, setCollections] = useAtom(collectionsAtom);
   const [isSaved, setIsSaved] = React.useState(false);
@@ -37,7 +45,7 @@ export const useCollections = () => {
 
   const search = React.useCallback(
     (query: string) => {
-      return collections.filter((collection) => collection.name.toLowerCase().includes(query.toLowerCase()));
+      return collections.filter((collection) => getCollectionTextForSearch(collection).includes(query.toLowerCase()));
     },
     [collections],
   );

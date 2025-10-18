@@ -2,6 +2,7 @@ import { ListFilter } from "lucide-react";
 import React from "react";
 import { OperationIcon } from "@/components/Operations";
 import { Button } from "@/components/ui/button";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   Dialog,
   DialogClose,
@@ -70,10 +71,17 @@ export const Collections = ({ ...props }: CollectionsProps) => {
     if (query.trim() === "") {
       return collections.collections;
     }
-    return collections.collections
-      .filter((collection) => collection.name.toLowerCase().includes(query.toLowerCase()))
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [collections.collections, query]);
+    return collections.search(query).sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [collections, query]);
+
+  const handleDeleteCollection = React.useCallback(
+    (collectionId: string) => {
+      collections.remove(collectionId);
+      const tab = tabs.tabs.find((tab) => tab.state.collectionId === collectionId);
+      if (tab) tabs.close(tab.id);
+    },
+    [collections, tabs],
+  );
 
   return (
     <div {...props}>
@@ -92,13 +100,22 @@ export const Collections = ({ ...props }: CollectionsProps) => {
         <ul className="divide-y divide-white/20 max-h-full overflow-y-auto flex-1 min-h-0">
           {filteredCollections.map((collection) => (
             <li key={collection.id} className="select-none py-1">
-              {collection.type === "elasticsearch" && (
-                <ElasticsearchCollectionView
-                  collection={collection}
-                  className="rounded-lg hover:bg-white/35 transition-colors cursor-pointer px-3 py-2 min-h-[5rem]"
-                  onClick={() => handleClickCollection(collection)}
-                />
-              )}
+              <ContextMenu>
+                <ContextMenuTrigger asChild>
+                  {collection.type === "elasticsearch" && (
+                    <ElasticsearchCollectionView
+                      collection={collection}
+                      className="rounded-lg hover:bg-white/35 transition-colors cursor-pointer px-3 py-2 min-h-[5rem]"
+                      onClick={() => handleClickCollection(collection)}
+                    />
+                  )}
+                </ContextMenuTrigger>
+                <ContextMenuContent>
+                  <ContextMenuItem onSelect={() => handleDeleteCollection(collection.id)}>
+                    Delete Collection
+                  </ContextMenuItem>
+                </ContextMenuContent>
+              </ContextMenu>
             </li>
           ))}
         </ul>
