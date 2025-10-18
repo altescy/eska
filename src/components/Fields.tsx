@@ -8,6 +8,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { getFieldTypeColor } from "@/lib/elasticsearch";
 import type { ElasticsearchField } from "@/types/elasticsearch";
 
 interface FieldTableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
@@ -55,7 +56,9 @@ const FieldTableRow = React.memo(
           {field.index && <Funnel className="block text-muted-foreground" size={14} />}
         </td>
         <td className="pl-2 border-b border-b-gray-700/10">
-          <span className="bg-red-300 rounded px-1 py-0.5 font-mono text-xs whitespace-nowrap">{field.type}</span>
+          <span className={`${getFieldTypeColor(field.type)} text-gray-700 rounded px-1 py-0.5 font-mono text-xs whitespace-nowrap`}>
+            {field.type}
+          </span>
         </td>
         <td className="pl-2 border-b border-b-gray-700/10">
           <span className="font-mono text-xs whitespace-nowrap">{name}</span>

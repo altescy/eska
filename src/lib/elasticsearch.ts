@@ -219,3 +219,116 @@ export function extractIndexFields(
     Object.entries(extractFields(mapping, prefix)).filter(([_, config]) => config.index !== false),
   );
 }
+
+/**
+ * Get Tailwind CSS color class for an Elasticsearch field type
+ */
+export function getFieldTypeColor(fieldType: string): string {
+  // Text types
+  if (fieldType === "text" || fieldType === "match_only_text") {
+    return "bg-blue-300/60";
+  }
+  if (fieldType === "keyword" || fieldType === "constant_keyword" || fieldType === "wildcard") {
+    return "bg-blue-400/60";
+  }
+
+  // Numeric types
+  if (
+    fieldType === "long" ||
+    fieldType === "integer" ||
+    fieldType === "short" ||
+    fieldType === "byte" ||
+    fieldType === "double" ||
+    fieldType === "float" ||
+    fieldType === "half_float" ||
+    fieldType === "scaled_float" ||
+    fieldType === "unsigned_long"
+  ) {
+    return "bg-emerald-300/60";
+  }
+
+  // Date types
+  if (fieldType === "date" || fieldType === "date_nanos") {
+    return "bg-purple-300/60";
+  }
+
+  // Boolean
+  if (fieldType === "boolean") {
+    return "bg-amber-300/60";
+  }
+
+  // Binary
+  if (fieldType === "binary") {
+    return "bg-slate-300/60";
+  }
+
+  // Range types
+  if (
+    fieldType === "integer_range" ||
+    fieldType === "float_range" ||
+    fieldType === "long_range" ||
+    fieldType === "double_range" ||
+    fieldType === "date_range" ||
+    fieldType === "ip_range"
+  ) {
+    return "bg-emerald-400/60";
+  }
+
+  // Object/Nested
+  if (fieldType === "object" || fieldType === "nested" || fieldType === "flattened") {
+    return "bg-orange-300/60";
+  }
+
+  // Geo types
+  if (fieldType === "geo_point" || fieldType === "geo_shape") {
+    return "bg-teal-300/60";
+  }
+
+  // IP
+  if (fieldType === "ip") {
+    return "bg-cyan-300/60";
+  }
+
+  // Completion
+  if (fieldType === "completion") {
+    return "bg-indigo-300/60";
+  }
+
+  // Search as you type
+  if (fieldType === "search_as_you_type") {
+    return "bg-sky-300/60";
+  }
+
+  // Token count
+  if (fieldType === "token_count") {
+    return "bg-yellow-300/60";
+  }
+
+  // Dense vector
+  if (fieldType === "dense_vector") {
+    return "bg-pink-300/60";
+  }
+
+  // Rank features/feature
+  if (fieldType === "rank_feature" || fieldType === "rank_features") {
+    return "bg-rose-300/60";
+  }
+
+  // Alias
+  if (fieldType === "alias") {
+    return "bg-slate-400/60";
+  }
+
+  // Join
+  if (fieldType === "join") {
+    return "bg-violet-300/60";
+  }
+
+  // Percolator
+  if (fieldType === "percolator") {
+    return "bg-fuchsia-300/60";
+  }
+
+  // Default for unknown types
+  return "bg-gray-400/60";
+}
