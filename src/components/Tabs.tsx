@@ -54,8 +54,8 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
 
   return (
     <div {...props}>
-      <div className="flex flex-col gap-2 w-full h-full">
-        <div className="flex gap-2 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
+      <div className="flex flex-col gap-1 w-full h-full">
+        <div className="flex gap-1 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
           <div className="flex gap-2 h-9 w-fit overflow-y-hidden overflow-x-auto p-0 scrollbar-none">
             {tabs.tabs.map((tab) => (
               <div

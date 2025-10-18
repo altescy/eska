@@ -36,7 +36,7 @@ function App() {
   return (
     <>
       <div className="h-screen w-screen overflow-hidden">
-        <div className="w-full h-full flex pt-1 overflow-hidden text-gray-800">
+        <div className="w-full h-full flex overflow-hidden text-gray-800">
           <div className="pt-10 pb-2 w-[80px] shrink-0 h-full flex flex-col gap-2 items-center app-region-drag">
             <Dialog>
               <DialogTrigger asChild>
@@ -74,12 +74,12 @@ function App() {
               collapsedSize={0}
               onCollapse={() => setOpenCollections(false)}
             >
-              <div className="h-2 app-region-drag" />
+              <div className="h-1 app-region-drag" />
               <Collections className="w-full h-full flex-1 min-h-0" />
             </Panel>
             <PanelResizeHandle />
             <Panel className="flex flex-col pt-0 px-2 pb-2 w-full h-full min-h-0">
-              <div className="h-2 w-full shrink-0 app-region-drag" />
+              <div className="h-1 w-full shrink-0 app-region-drag" />
               <Tabs className="w-full h-full flex-1 min-h-0" />
             </Panel>
           </PanelGroup>
