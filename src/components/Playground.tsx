@@ -259,7 +259,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
             <SaveCollectionDialog collection={collection}>
-              <Button variant="ghost" size="icon" disabled={collections.isSaved}>
+              <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
                 {collections.isSaved ? <Check /> : <Save />}
               </Button>
             </SaveCollectionDialog>

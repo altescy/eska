@@ -28,18 +28,40 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     }
   }, [tabs.activeTabId]);
 
+  const handleAddTab = React.useCallback(() => {
+    const newTab = tabs.newPlaygroundTab();
+    tabs.add(newTab);
+    tabs.activate(newTab.id);
+  }, [tabs]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl/Cmd + T to add new tab
+      if ((event.ctrlKey || event.metaKey) && event.key === "t") {
+        event.preventDefault();
+        handleAddTab();
+      }
+      // Ctrl/Cmd + W to close active tab
+      if ((event.ctrlKey || event.metaKey) && event.key === "w") {
+        event.preventDefault();
+        if (tabs.activeTabId) {
+          tabs.close(tabs.activeTabId);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleAddTab, tabs]);
+
   const handleSelectTab = React.useCallback(
     (tabId: string) => {
       tabs.activate(tabId);
     },
     [tabs],
   );
-
-  const handleAddTab = React.useCallback(() => {
-    const newTab = tabs.newPlaygroundTab();
-    tabs.add(newTab);
-    tabs.activate(newTab.id);
-  }, [tabs]);
 
   const handleCloseTab = React.useCallback(
     (tabId: string) => {
