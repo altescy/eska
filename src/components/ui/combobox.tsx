@@ -1,9 +1,11 @@
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { clsx } from "clsx";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useResizeObserver } from "@/hooks/useResizeObserver";
 
 export interface ComboboxProps extends React.HTMLAttributes<HTMLDivElement> {
   items?: { key: string; value: string; label: React.JSX.Element | string; details?: React.JSX.Element | string }[];
@@ -15,6 +17,8 @@ export interface ComboboxProps extends React.HTMLAttributes<HTMLDivElement> {
 export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ...props }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [key, setKey] = React.useState(initialKey ?? "");
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const triggerSize = useResizeObserver(triggerRef);
 
   React.useEffect(() => {
     if (initialKey !== undefined) {
@@ -22,11 +26,14 @@ export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ..
     }
   }, [initialKey]);
 
+  const triggerWidth = React.useMemo(() => triggerSize?.width, [triggerSize]);
+
   return (
     <div {...props}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -38,12 +45,12 @@ export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ..
             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-full p-0 overflow-hidden">
-          <Command className="w-full">
+        <PopoverContent className={clsx("p-0 overflow-hidden", triggerWidth ? `w-[${triggerWidth}px]` : "w-full")}>
+          <Command className={clsx(triggerWidth ? `w-[${triggerWidth}px]` : "w-full")}>
             <CommandInput className="w-full" placeholder="Search item..." />
-            <CommandList className="w-full overflow-auto">
+            <CommandList className="overflow-auto w-full">
               <CommandEmpty>No item found.</CommandEmpty>
-              <CommandGroup className="max-w-full overflow-auto">
+              <CommandGroup className="w-full overflow-auto">
                 {items.map((item) => (
                   <CommandItem
                     key={item.key}
