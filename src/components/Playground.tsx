@@ -16,14 +16,12 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useClipboard } from "@/hooks/useClipboard";
+import { useClusters } from "@/hooks/useClusters";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
-import { useMountEffect } from "@/hooks/useMountEffect";
 import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
+import type { Cluster } from "@/types/cluster";
 import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 
-const ELASTICSEARCH_HOST = import.meta.env.VITE_ELASTICSEARCH_HOST;
-const ELASTICSEARCH_USERNAME = import.meta.env.VITE_ELASTICSEARCH_USERNAME;
-const ELASTICSEARCH_PASSWORD = import.meta.env.VITE_ELASTICSEARCH_PASSWORD;
 const DEFAULT_QUERY = `{
   "query": {
     "match_all": {}
@@ -35,34 +33,34 @@ export interface PlaygroundProps extends React.HTMLAttributes<HTMLDivElement> {}
 export const Playground = ({ ...props }: PlaygroundProps) => {
   const [query, setQuery] = React.useState(DEFAULT_QUERY);
   const [response, setResponse] = React.useState("");
+  const [clusters] = useClusters();
+  const [cluster, setCluster] = React.useState<Cluster>();
   const [indices, setIndices] = React.useState<ElasticsearchGetIndicesResponse>();
   const [selectedIndexName, setSelectedIndexName] = React.useState<string>();
   const clipboardForQuery = useClipboard();
 
-  const elasticsearch = useElasticsearch({
-    id: "local-elasticsearch",
-    name: "Local Elasticsearch",
-    auth: {
-      type: "basic",
-      host: ELASTICSEARCH_HOST,
-      username: ELASTICSEARCH_USERNAME,
-      password: ELASTICSEARCH_PASSWORD,
-    },
-  });
+  const elasticsearch = useElasticsearch();
 
-  useMountEffect(async () => {
-    setIndices(await elasticsearch.getIndices());
-  });
-
-  const handleSearch = React.useCallback(() => {
-    if (!selectedIndexName) {
-      return;
-    }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
+  React.useEffect(() => {
     (async () => {
-      const response = await elasticsearch.search(selectedIndexName, JSON.parse(query));
+      if (cluster) {
+        setIndices(await elasticsearch.getIndices(cluster));
+      } else {
+        setIndices(undefined);
+        setSelectedIndexName(undefined);
+      }
+    })();
+  }, [cluster]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
+  const handleSearch = React.useCallback(() => {
+    if (!cluster || !selectedIndexName) return;
+    (async () => {
+      const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(query));
       setResponse(JSON.stringify(response, null, 2));
     })();
-  }, [query, selectedIndexName, elasticsearch]);
+  }, [query, selectedIndexName, elasticsearch.search]);
 
   const handleFormatQuery = React.useCallback(() => {
     try {
@@ -111,6 +109,17 @@ export const Playground = ({ ...props }: PlaygroundProps) => {
     <div {...props}>
       <div className="flex flex-col gap-1 h-full w-full">
         <div className="h-fit w-full shrink-0 flex gap-1">
+          <Combobox
+            items={clusters.map((c) => ({
+              key: c.id,
+              value: c.id,
+              label: c.name,
+              details: <div className="text-xs text-gray-400">{c.auth.host}</div>,
+            }))}
+            placeholder="Select cluster"
+            onSelectItem={(selected) => setCluster(clusters.find((c) => c.id === selected?.key))}
+            className="w-[200px] shrink-0 bg-white/40 rounded-lg overflow-hidden"
+          />
           <Select defaultValue="search">
             <SelectTrigger className="w-[120px] shrink-0 border-none bg-white/40 rounded-l-lg rounded-r-none">
               <SelectValue placeholder="Select a fruit" />
@@ -138,7 +147,7 @@ export const Playground = ({ ...props }: PlaygroundProps) => {
               ),
             }))}
             placeholder={elasticsearch.isLoading ? "Loading indices..." : "Select index"}
-            onSelectItem={(indexName) => setSelectedIndexName(indexName)}
+            onSelectItem={(selected) => setSelectedIndexName(selected?.key)}
             className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
           />
         </div>

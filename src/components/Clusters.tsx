@@ -195,14 +195,14 @@ export interface ClusterInfoProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const ClusterInfo = ({ cluster, ...props }: ClusterInfoProps) => {
-  const elasticsearch = useElasticsearch(cluster);
+  const elasticsearch = useElasticsearch();
   const [health, setHealth] = React.useState<ElasticsearchClusterHealthResponse | Error>();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: The elasticsearch.health function is stable.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
   React.useEffect(() => {
     (async () => {
       try {
-        setHealth(await elasticsearch.health());
+        setHealth(await elasticsearch.health(cluster));
       } catch (error) {
         setHealth(error as Error);
       }
@@ -334,8 +334,8 @@ export const Clusters = ({ ...props }: ClustersProps) => {
                 )}
                 onClick={() => setSelectedCluster(cluster)}
               >
-                <h5 className="text-gray-800 font-medium">{cluster.name}</h5>
-                <p className="text-sm text-gray-500">{cluster.auth.host}</p>
+                <h5 className="text-gray-800 font-medium truncate">{cluster.name}</h5>
+                <p className="text-sm text-gray-500 truncate">{cluster.auth.host}</p>
               </li>
             ))}
           </ul>

@@ -4,13 +4,15 @@ import type { Cluster } from "@/types/cluster";
 import type {
   ElaseticsearchSearchResponse,
   ElasticsearchClusterHealthResponse,
+  ElasticsearchErrorResponse,
   ElasticsearchGetIndicesResponse,
 } from "@/types/elasticsearch";
 
-export const useElasticsearch = (cluster: Cluster) => {
+export const useElasticsearch = () => {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const headers = React.useMemo((): Record<string, string> => {
+  const getHeaders = React.useCallback((cluster: Cluster): Record<string, string> => {
+    if (!cluster) return {};
     if (cluster.auth?.type === "basic") {
       return {
         "Content-Type": "application/json",
@@ -18,10 +20,11 @@ export const useElasticsearch = (cluster: Cluster) => {
       };
     }
     return { "Content-Type": "application/json" };
-  }, [cluster.auth]);
+  }, []);
 
   const request = React.useCallback(
     async <Response>(
+      cluster: Cluster,
       method: string,
       path: string,
       data?: {
@@ -37,37 +40,41 @@ export const useElasticsearch = (cluster: Cluster) => {
             url.searchParams.append(key, String(value));
           });
         }
+        const headers = getHeaders(cluster);
         const response = await fetch(url.toString(), {
           method,
           headers,
           body: data?.body ? JSON.stringify(data.body) : undefined,
         });
-        if (!response.ok) {
-          throw new Error(`Elasticsearch request failed: ${response.statusText}`);
-        }
         return response.json();
       } finally {
         setIsLoading(false);
       }
     },
-    [cluster.auth, headers],
+    [getHeaders],
   );
 
-  const ping = React.useCallback(async () => await request("GET", "/"), [request]);
+  const ping = React.useCallback(async (cluster: Cluster) => await request(cluster, "GET", "/"), [request]);
 
   const health = React.useCallback(
-    async (): Promise<ElasticsearchClusterHealthResponse> => await request("GET", "/_cluster/health"),
+    async (cluster: Cluster): Promise<ElasticsearchClusterHealthResponse> =>
+      await request(cluster, "GET", "/_cluster/health"),
     [request],
   );
 
   const search = React.useCallback(
-    async (index: string, query: object): Promise<ElaseticsearchSearchResponse> =>
-      await request("POST", `${quote(index)}/_search`, { body: query }),
+    async (
+      cluster: Cluster,
+      index: string,
+      query: object,
+    ): Promise<ElaseticsearchSearchResponse | ElasticsearchErrorResponse> =>
+      await request(cluster, "POST", `${quote(index)}/_search`, { body: query }),
     [request],
   );
 
   const getIndices = React.useCallback(
-    async (index: string = "*"): Promise<ElasticsearchGetIndicesResponse> => await request("GET", `${quote(index)}`),
+    async (cluster: Cluster, index: string = "*"): Promise<ElasticsearchGetIndicesResponse> =>
+      await request(cluster, "GET", `${quote(index)}`),
     [request],
   );
 

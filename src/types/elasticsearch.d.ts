@@ -26,6 +26,18 @@ export interface ElasticsearchIndex {
   settings: { [key: string]: JSONValue };
 }
 
+export interface ElasticsearchErrorResponse {
+  error: {
+    root_cause: Array<{
+      type: string;
+      reason: string;
+    }>;
+    type: string;
+    reason: string;
+  };
+  status: number;
+}
+
 export interface ElasticsearchClusterHealthResponse {
   cluster_name: string;
   status: "green" | "yellow" | "red";

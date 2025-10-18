@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export interface ComboboxProps extends React.HTMLAttributes<HTMLDivElement> {
   items?: { key: string; value: string; label: React.JSX.Element | string; details?: React.JSX.Element | string }[];
   placeholder?: string;
-  onSelectItem?: (key: string, value: string) => void;
+  onSelectItem?: (selected?: { key: string; value: string }) => void;
 }
 
 export function Combobox({ items = [], placeholder, onSelectItem, ...props }: ComboboxProps) {
@@ -17,7 +17,7 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
 
   React.useEffect(() => {
     const selectedItem = items.find((item) => item.key === key);
-    if (selectedItem) onSelectItem?.(selectedItem.key, selectedItem.value);
+    onSelectItem?.(selectedItem ? { key: selectedItem.key, value: selectedItem.value } : undefined);
   }, [key, items, onSelectItem]);
 
   return (
@@ -54,7 +54,7 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
                     <CheckIcon className={cn("mr-2 h-4 w-4", key === item.key ? "opacity-100" : "opacity-0")} />
                     <div>
                       {item.label}
-                      {item.details && <div className="ml-2 mt-1">{item.details}</div>}
+                      {item.details && <div className="mt-1">{item.details}</div>}
                     </div>
                   </CommandItem>
                 ))}
