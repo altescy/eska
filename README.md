@@ -73,6 +73,27 @@ pnpm dev
 - `pnpm lint` - Run linter
 - `pnpm format` - Format code with Biome
 
+### Generating App Icons
+
+To generate app icons from a source image:
+
+```bash
+./scripts/generate-icons.sh <source-image>
+
+# Example
+./scripts/generate-icons.sh icon_large.png
+```
+
+This will generate icons for all platforms:
+- `build/icon.png` (1024x1024) - macOS
+- `build/icon-512.png` (512x512) - Linux
+- `build/icon-256.png` (256x256) - Windows
+- `public/favicon.png` (32x32) - Web/Window icon
+
+**Requirements:**
+- Source image should be square and at least 512x512 pixels
+- Larger images (1024x1024 or higher) recommended for best quality
+
 ### Project Structure
 
 ```
