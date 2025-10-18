@@ -252,7 +252,10 @@ export const Clusters = ({ ...props }: ClustersProps) => {
   const [open, setOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [clusterToDelete, setClusterToDelete] = React.useState<Cluster>();
+  const [isTestingConnection, setIsTestingConnection] = React.useState(false);
+  const [connectionTestResult, setConnectionTestResult] = React.useState<"success" | "error" | null>(null);
   const dialogRef = React.useRef<ClusterConfigHandler<Cluster>>(null);
+  const elasticsearch = useElasticsearch();
 
   const handleNewCluster = () => {
     setSelectedCluster(undefined);
@@ -288,6 +291,30 @@ export const Clusters = ({ ...props }: ClustersProps) => {
     setDeleteDialogOpen(false);
     setClusterToDelete(undefined);
   };
+
+  const handleTestConnection = React.useCallback(async () => {
+    const cluster = dialogRef.current?.getCluster();
+    if (!cluster) return;
+
+    setIsTestingConnection(true);
+    setConnectionTestResult(null);
+
+    try {
+      await elasticsearch.health(cluster);
+      setConnectionTestResult("success");
+    } catch (error) {
+      setConnectionTestResult("error");
+      console.error("Connection test failed:", error);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  }, [elasticsearch]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setConnectionTestResult(null);
+    }
+  }, [open]);
 
   const filteredClusters = React.useMemo(() => {
     if (!query) return clusters;
@@ -328,13 +355,40 @@ export const Clusters = ({ ...props }: ClustersProps) => {
                 </TooltipTrigger>
                 <TooltipContent>Add cluster</TooltipContent>
               </Tooltip>
-              <DialogContent className="max-w-lg bg-[#ffffffa0] backdrop-blur-3xl backdrop-brightness-200">
+              <DialogContent className="max-w-lg bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
                 <DialogHeader>
                   <DialogTitle>Add Cluster</DialogTitle>
                   <DialogDescription>Add a new Elasticsearch cluster configuration.</DialogDescription>
                 </DialogHeader>
                 <ClusterConfig ref={dialogRef} initialCluster={selectedCluster} />
-                <DialogFooter>
+                {connectionTestResult && (
+                  <div
+                    className={clsx(
+                      "text-sm px-4 py-2 rounded-md",
+                      connectionTestResult === "success" && "bg-green-100 text-green-800",
+                      connectionTestResult === "error" && "bg-red-100 text-red-800",
+                    )}
+                  >
+                    {connectionTestResult === "success"
+                      ? "Connection successful!"
+                      : "Connection failed. Please check your configuration."}
+                  </div>
+                )}
+                <DialogFooter className="gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleTestConnection}
+                        disabled={isTestingConnection}
+                      >
+                        {isTestingConnection ? <Spinner className="mr-2" /> : null}
+                        Test Connection
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Test connection to cluster</TooltipContent>
+                  </Tooltip>
                   <Button type="submit" onClick={handleSaveConfig}>
                     Save
                   </Button>

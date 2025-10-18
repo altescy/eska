@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> { }
+export interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const Settings = ({ ...props }: SettingsProps) => {
   const [editorSettings, setEditorSettings] = useAtom(editorSettingsAtom);

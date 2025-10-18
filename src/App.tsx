@@ -51,7 +51,7 @@ function App() {
                 </TooltipTrigger>
                 <TooltipContent side="right">Manage clusters</TooltipContent>
               </Tooltip>
-              <DialogContent className="sm:max-w-[800px] bg-white/70 backdrop-blur-2xl backdrop-brightness-150">
+              <DialogContent className="sm:max-w-[800px] bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
                 <DialogHeader>
                   <DialogTitle>Clusters</DialogTitle>
                   <DialogDescription>Manage your Elasticsearch cluster configurations.</DialogDescription>
@@ -84,7 +84,7 @@ function App() {
                 </TooltipTrigger>
                 <TooltipContent side="right">Open settings</TooltipContent>
               </Tooltip>
-              <DialogContent className="sm:max-w-[600px] bg-white/70 backdrop-blur-2xl backdrop-brightness-150">
+              <DialogContent className="sm:max-w-[600px] bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
                 <DialogHeader>
                   <DialogTitle>Settings</DialogTitle>
                   <DialogDescription>Configure application preferences and manage data.</DialogDescription>
