@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -72,6 +72,21 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
+})
+
+// Set up IPC handlers for safeStorage
+ipcMain.handle('safeStorage:isEncryptionAvailable', () => {
+  return safeStorage.isEncryptionAvailable()
+})
+
+ipcMain.handle('safeStorage:encryptString', (_event, plainText: string) => {
+  const buffer = safeStorage.encryptString(plainText)
+  return buffer.toString('base64')
+})
+
+ipcMain.handle('safeStorage:decryptString', (_event, encrypted: string) => {
+  const buffer = Buffer.from(encrypted, 'base64')
+  return safeStorage.decryptString(buffer)
 })
 
 app.whenReady().then(createWindow)

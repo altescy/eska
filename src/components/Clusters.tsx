@@ -1,8 +1,6 @@
 import { clsx } from "clsx";
-import { useAtom } from "jotai";
 import { Activity, Lock, Pen, Plus, Search, Server, Tag, Trash, User } from "lucide-react";
 import React from "react";
-import { clustersAtom } from "@/atoms/clusters";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +14,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useClusters } from "@/hooks/useClusters";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { uuid4 } from "@/lib/uuid";
 import type { AuthConfig, AuthType, BasicAuth, Cluster, NoAuth } from "@/types/cluster";
@@ -246,7 +245,7 @@ export interface ClustersProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const Clusters = ({ ...props }: ClustersProps) => {
   const [query, setQuery] = React.useState("");
-  const [clusters, setClusters] = useAtom(clustersAtom);
+  const [clusters, setClusters] = useClusters();
   const [selectedCluster, setSelectedCluster] = React.useState<Cluster>();
   const [open, setOpen] = React.useState(false);
   const dialogRef = React.useRef<ClusterConfigHandler<Cluster>>(null);

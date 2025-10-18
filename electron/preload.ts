@@ -22,3 +22,10 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   // You can expose other APTs you need here.
   // ...
 })
+
+// Expose safeStorage API
+contextBridge.exposeInMainWorld('safeStorage', {
+  isEncryptionAvailable: () => ipcRenderer.invoke('safeStorage:isEncryptionAvailable'),
+  encryptString: (plainText: string) => ipcRenderer.invoke('safeStorage:encryptString', plainText),
+  decryptString: (encrypted: string) => ipcRenderer.invoke('safeStorage:decryptString', encrypted),
+})

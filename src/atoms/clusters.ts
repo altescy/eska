@@ -1,6 +1,9 @@
 import { atomWithStorage } from "jotai/utils";
-import type { Cluster } from "@/types/cluster";
+import { createSecureStorage } from "@/lib/secureStorage";
 
 const STORAGE_KEY = "eska:v0.0.1:clusters";
 
-export const clustersAtom = atomWithStorage<Cluster[]>(STORAGE_KEY, []);
+const secureStorage = createSecureStorage();
+
+// Atom that stores encrypted cluster data as a string
+export const clustersAtom = atomWithStorage<string | null>(STORAGE_KEY, null, secureStorage);
