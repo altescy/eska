@@ -11,6 +11,96 @@ import {
 import { getFieldTypeColor } from "@/lib/elasticsearch";
 import type { ElasticsearchField } from "@/types/elasticsearch";
 
+interface FilterCriteria {
+  attributes: Set<string>; // @index, @source, @selected
+  types: Set<string>; // :text, :keyword, etc.
+  negativeAttributes: Set<string>; // -@index, etc.
+  negativeTypes: Set<string>; // -:text, etc.
+  textQuery: string; // remaining text for name matching
+}
+
+/**
+ * Parse filter query string into structured criteria
+ * Supports:
+ * - @index, @source, @selected (attributes)
+ * - :type (field types)
+ * - - prefix for negation
+ * - plain text for field name matching
+ */
+function parseFilterQuery(query: string): FilterCriteria {
+  const tokens = query.trim().split(/\s+/);
+  const criteria: FilterCriteria = {
+    attributes: new Set(),
+    types: new Set(),
+    negativeAttributes: new Set(),
+    negativeTypes: new Set(),
+    textQuery: "",
+  };
+
+  const textParts: string[] = [];
+
+  for (const token of tokens) {
+    if (token.startsWith("-@")) {
+      // Negative attribute
+      criteria.negativeAttributes.add(token.slice(2));
+    } else if (token.startsWith("@")) {
+      // Positive attribute
+      criteria.attributes.add(token.slice(1));
+    } else if (token.startsWith("-:")) {
+      // Negative type
+      criteria.negativeTypes.add(token.slice(2));
+    } else if (token.startsWith(":")) {
+      // Positive type
+      criteria.types.add(token.slice(1));
+    } else {
+      // Plain text
+      textParts.push(token);
+    }
+  }
+
+  criteria.textQuery = textParts.join(" ").toLowerCase();
+  return criteria;
+}
+
+/**
+ * Check if a field matches the filter criteria
+ */
+function matchesFilter(
+  name: string,
+  field: ElasticsearchField,
+  isSelected: boolean,
+  criteria: FilterCriteria,
+): boolean {
+  // Check negative attributes first (exclusions)
+  if (criteria.negativeAttributes.has("index") && field.index) return false;
+  if (criteria.negativeAttributes.has("source") && field.source) return false;
+  if (criteria.negativeAttributes.has("selected") && isSelected) return false;
+
+  // Check negative types (exclusions)
+  if (criteria.negativeTypes.has(field.type.toLowerCase())) return false;
+
+  // Check positive attributes
+  if (criteria.attributes.size > 0) {
+    let matchesAny = false;
+    if (criteria.attributes.has("index") && field.index) matchesAny = true;
+    if (criteria.attributes.has("source") && field.source) matchesAny = true;
+    if (criteria.attributes.has("selected") && isSelected) matchesAny = true;
+    if (!matchesAny) return false;
+  }
+
+  // Check positive types (OR logic)
+  if (criteria.types.size > 0) {
+    if (!criteria.types.has(field.type.toLowerCase())) return false;
+  }
+
+  // Check text query (field name matching)
+  if (criteria.textQuery && !name.toLowerCase().includes(criteria.textQuery)) {
+    return false;
+  }
+
+  return true;
+}
+
 interface FieldTableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   name: string;
   field: ElasticsearchField;
@@ -70,6 +160,7 @@ const FieldTableRow = React.memo(
 
 export interface FieldTableProps extends React.HTMLAttributes<HTMLTableElement> {
   fields: Record<string, ElasticsearchField>;
+  selectedFields?: string[];
   disabled?: boolean;
   onSelectionChange?: (fields: string[]) => void;
 }
@@ -80,8 +171,8 @@ export interface FieldTableHandler {
 }
 
 export const FieldTable = React.forwardRef<FieldTableHandler, FieldTableProps>(
-  ({ fields, disabled = false, onSelectionChange, ...props }, ref) => {
-    const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
+  ({ fields, selectedFields: externalSelectedFields, disabled = false, onSelectionChange, ...props }, ref) => {
+    const [selectedFields, setSelectedFields] = React.useState<string[]>(externalSelectedFields ?? []);
 
     React.useImperativeHandle(
       ref,
@@ -131,24 +222,30 @@ export interface FieldsProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }: FieldsProps) => {
   const [query, setQuery] = React.useState("");
-  const [selectedFieldCount, setSelectedFieldCount] = React.useState(0);
+  const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
   const tableRef = React.useRef<FieldTableHandler>(null);
+  const selectedFieldCount = React.useMemo(() => selectedFields.length, [selectedFields]);
+
   const filteredFields = React.useMemo(() => {
     if (query.trim() === "") {
       return fields;
     }
-    const lowerQuery = query.toLowerCase();
+
+    const criteria = parseFilterQuery(query);
     const result: Record<string, ElasticsearchField> = {};
+
     for (const [name, field] of Object.entries(fields)) {
-      if (name.toLowerCase().includes(lowerQuery) || field.type.toLowerCase().includes(lowerQuery)) {
+      const isSelected = selectedFields.includes(name);
+      if (matchesFilter(name, field, isSelected, criteria)) {
         result[name] = field;
       }
     }
+
     return result;
-  }, [fields, query]);
+  }, [fields, query, selectedFields]);
   const handleSelectionChange = React.useCallback(
     (selectedFields: string[]) => {
-      setSelectedFieldCount(selectedFields.length);
+      setSelectedFields(selectedFields);
       onSelectionChange?.(selectedFields);
     },
     [onSelectionChange],
@@ -158,8 +255,14 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
       <div className="w-full h-full flex flex-col">
         <div className="shrink-0 p-2 border-b border-b-gray-700/10">
           <InputGroup className="border-none outline-none bg-white/15 rounded-md">
-            <InputGroupAddon>
-              <ListFilter className="text-muted-foreground" />
+            <InputGroupAddon className="w-10 h-10">
+              {selectedFieldCount > 0 ? (
+                <InputGroupText className="bg-gray-400/10 rounded-md text-xs w-full h-full flex items-center justify-center">
+                  {selectedFieldCount}
+                </InputGroupText>
+              ) : (
+                <ListFilter className="text-muted-foreground" />
+              )}
             </InputGroupAddon>
             <InputGroupInput
               type="text"
@@ -179,9 +282,7 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
             )}
             {selectedFieldCount > 0 && (
               <>
-                <InputGroupText className="bg-gray-400/10 rounded-md px-3 py-1.5 text-xs mr-1">
-                  {selectedFieldCount}
-                </InputGroupText>
+
                 <InputGroupButton
                   onClick={() => tableRef.current?.clearSelection()}
                   disabled={disabled}
@@ -197,6 +298,7 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
           <FieldTable
             ref={tableRef}
             fields={filteredFields}
+            selectedFields={selectedFields}
             disabled={disabled}
             onSelectionChange={handleSelectionChange}
             className="w-full text-gray-700"
