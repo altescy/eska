@@ -13,7 +13,7 @@ const scrollToTab = (tabId: string) => {
   }
 };
 
-export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> { }
+export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export type TabsHandler = Record<string, never>;
 
@@ -119,7 +119,7 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
               key={tab.id}
               collectionId={tab.state.collectionId}
               initialState={tab.state}
-              className="w-full h-full min-h-0"
+              className={clsx("w-full h-full min-h-0", tabs.activeTabId !== tab.id && "hidden")}
               hidden={tabs.activeTabId !== tab.id}
               onStateChange={(newState) => handleUpdatePlaygroundTabState(tab.id, newState)}
             />
