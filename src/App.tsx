@@ -2,7 +2,6 @@ import { Folder, Server, Settings } from "lucide-react";
 import React from "react";
 import { type ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Clusters } from "@/components/Clusters";
-import { Playground } from "@/components/Playground";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import "@fontsource-variable/fira-code";
+import { Tabs } from "@/components/Tabs";
 
 function App() {
   const [openCollections, setOpenCollections] = React.useState(true);
@@ -68,9 +68,9 @@ function App() {
             <div className="h-1 app-region-drag" />
           </Panel>
           <PanelResizeHandle />
-          <Panel className="p-2 flex flex-col w-full h-full min-h-0">
-            <div className="h-10 w-full shrink-0 app-region-drag">Tabs</div>
-            <Playground className="flex-1 min-h-0 w-full h-full bg-white/40 rounded-2xl p-2" />
+          <Panel className="flex flex-col pt-0 px-2 pb-2 w-full h-full min-h-0">
+            <div className="h-2 w-full shrink-0 app-region-drag" />
+            <Tabs className="w-full h-full flex-1 min-h-0" />
           </Panel>
         </PanelGroup>
       </div>

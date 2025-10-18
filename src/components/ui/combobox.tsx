@@ -9,16 +9,18 @@ export interface ComboboxProps extends React.HTMLAttributes<HTMLDivElement> {
   items?: { key: string; value: string; label: React.JSX.Element | string; details?: React.JSX.Element | string }[];
   placeholder?: string;
   onSelectItem?: (selected?: { key: string; value: string }) => void;
+  initialKey?: string;
 }
 
-export function Combobox({ items = [], placeholder, onSelectItem, ...props }: ComboboxProps) {
+export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ...props }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [key, setKey] = React.useState("");
+  const [key, setKey] = React.useState(initialKey ?? "");
 
   React.useEffect(() => {
-    const selectedItem = items.find((item) => item.key === key);
-    onSelectItem?.(selectedItem ? { key: selectedItem.key, value: selectedItem.value } : undefined);
-  }, [key, items, onSelectItem]);
+    if (initialKey !== undefined) {
+      setKey(initialKey);
+    }
+  }, [initialKey]);
 
   return (
     <div {...props}>
@@ -46,9 +48,16 @@ export function Combobox({ items = [], placeholder, onSelectItem, ...props }: Co
                   <CommandItem
                     key={item.key}
                     value={item.value}
-                    onSelect={(currentKey) => {
-                      setKey(currentKey === key ? "" : currentKey);
+                    onSelect={(currentValue) => {
+                      const selectedItem = items.find((i) => i.value === currentValue);
+                      const newKey = selectedItem?.key === key ? "" : (selectedItem?.key ?? "");
+                      setKey(newKey);
                       setOpen(false);
+                      if (newKey && selectedItem) {
+                        onSelectItem?.({ key: selectedItem.key, value: selectedItem.value });
+                      } else {
+                        onSelectItem?.(undefined);
+                      }
                     }}
                   >
                     <CheckIcon className={cn("mr-2 h-4 w-4", key === item.key ? "opacity-100" : "opacity-0")} />
