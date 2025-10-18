@@ -14,5 +14,6 @@ type OperationState = SearchOperationState;
 
 export interface PlaygroundState<T extends OperationState = OperationState> {
   clusterId?: string;
+  clusterName?: string;
   operation?: T;
 }

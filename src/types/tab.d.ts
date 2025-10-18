@@ -5,6 +5,7 @@ export interface BaseTab<Type extends TabType, State> {
   id: string;
   type: Type;
   state: State;
+  title?: string;
 }
 
 export type PlaygroundTab = BaseTab<"playground", PlaygroundState>;

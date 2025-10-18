@@ -7,12 +7,30 @@ import { Playground } from "@/components/Playground";
 import { uuid4 } from "@/lib/uuid";
 import type { PlaygroundState } from "@/types/playground";
 import type { Tab } from "@/types/tab";
+import { OperationIcon } from "./Operations";
 
 const scrollToTab = (tabId: string) => {
   const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
   if (tabElement) {
     tabElement.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }
+};
+
+const getTabTitle = (tab: Tab): string => {
+  if (tab.title) {
+    return tab.title;
+  }
+  if (tab.type === "playground") {
+    if (tab.state.operation) {
+      switch (tab.state.operation.type) {
+        case "search":
+          return `${tab.state.clusterName ?? "No cluster"} / ${tab.state.operation.indexName ?? "No index"}`.trim();
+        default:
+          return "Playground";
+      }
+    }
+  }
+  return "New Tab";
 };
 
 export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -77,7 +95,10 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
                   onClick={() => handleSelectTab(tab.id)}
                   className="max-w-xs truncate py-2 pl-2"
                 >
-                  {tab.type.charAt(0).toUpperCase() + tab.type.slice(1)}
+                  {tab.state.operation?.type && (
+                    <OperationIcon operation={tab.state.operation.type} className="inline-block ml-1 mr-2 h-4 w-4" />
+                  )}
+                  {getTabTitle(tab)}
                 </button>
                 <button type="button" onClick={() => handleCloseTab(tab.id)} className="py-2 pl-1 pr-2">
                   <X className="h-4 w-4" />

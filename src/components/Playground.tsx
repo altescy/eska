@@ -56,9 +56,13 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       () => ({
         getState: () => ({
           clusterId: cluster?.id,
-          indexName: selectedIndexName,
-          query,
-          response,
+          clusterName: cluster?.name,
+          operation: {
+            type: "search",
+            indexName: selectedIndexName,
+            query,
+            response,
+          },
         }),
       }),
       [cluster, selectedIndexName, query, response],
@@ -71,6 +75,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
 
       onStateChange?.({
         clusterId: cluster?.id,
+        clusterName: cluster?.name,
         operation: {
           type: "search",
           indexName: selectedIndexName,
