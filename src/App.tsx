@@ -75,10 +75,10 @@ function App() {
               onCollapse={() => setOpenCollections(false)}
             >
               <div className="h-1 app-region-drag" />
-              <Collections className="w-full h-full flex-1 min-h-0" />
+              <Collections className="w-full h-full flex-1 min-h-0 pr-2" />
             </Panel>
             <PanelResizeHandle />
-            <Panel className="flex flex-col pt-0 px-2 pb-2 w-full h-full min-h-0">
+            <Panel className="flex flex-col pt-0 pr-2 pb-2 w-full h-full min-h-0">
               <div className="h-1 w-full shrink-0 app-region-drag" />
               <Tabs className="w-full h-full flex-1 min-h-0" />
             </Panel>
