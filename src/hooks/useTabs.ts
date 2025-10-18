@@ -17,9 +17,6 @@ const getTabTitle = (tab: Tab): string => {
     return tab.title;
   }
   if (tab.type === "playground") {
-    if (tab.state.collection?.name) {
-      return tab.state.collection.name;
-    }
     if (tab.state.operation) {
       switch (tab.state.operation.type) {
         case "search":
@@ -72,7 +69,10 @@ export const useTabs = () => {
     const tab: Tab = {
       id: uuid4(),
       type: "playground",
-      state: { ...state },
+      state: {
+        collectionId: uuid4(),
+        ...state,
+      },
     };
     tab.title = getTabTitle(tab);
     return tab;

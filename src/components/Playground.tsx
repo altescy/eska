@@ -2,6 +2,7 @@ import { Check, Clipboard, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { toast } from "sonner";
 import { SaveCollectionDialog } from "@/components/Collections";
 import { Editor } from "@/components/Editor";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,6 @@ import { useClusters } from "@/hooks/useClusters";
 import { useCollections } from "@/hooks/useCollections";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
-import { uuid4 } from "@/lib/uuid";
 import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
 import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
@@ -34,6 +34,7 @@ const DEFAULT_QUERY = `{
 }`;
 
 export interface PlaygroundProps extends React.HTMLAttributes<HTMLDivElement> {
+  collectionId: string;
   initialState?: PlaygroundState;
   onStateChange?: (state: PlaygroundState) => void;
 }
@@ -43,7 +44,7 @@ export interface PlaygroundHandler {
 }
 
 export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
-  ({ initialState, onStateChange, ...props }, ref) => {
+  ({ collectionId, initialState, onStateChange, ...props }, ref) => {
     const [isInitialized, setIsInitialized] = React.useState(false);
     const [query, setQuery] = React.useState(DEFAULT_QUERY);
     const [response, setResponse] = React.useState("");
@@ -60,6 +61,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       ref,
       () => ({
         getState: () => ({
+          collectionId,
           clusterId: cluster?.id,
           clusterName: cluster?.name,
           operation: {
@@ -70,8 +72,29 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           },
         }),
       }),
-      [cluster, selectedIndexName, query, response],
+      [cluster, selectedIndexName, query, response, collectionId],
     );
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: collections.byId is stable
+    const collection = React.useMemo((): Collection => {
+      let existing = collectionId ? collections.byId(collectionId) : undefined;
+      if (existing?.type !== "elasticsearch") existing = undefined;
+      return {
+        id: collectionId,
+        type: "elasticsearch",
+        name: existing?.name ?? `${cluster?.name ?? "No cluster"} / ${selectedIndexName ?? "No index"}`,
+        content: {
+          type: "search",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          query,
+          response,
+        },
+        createdAt: existing?.createdAt ?? Date.now(),
+        updatedAt: Date.now(),
+      };
+    }, [cluster, selectedIndexName, query, response, collectionId, collections.byId]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: onStateChange is intentionally excluded to prevent infinite loops
     React.useEffect(() => {
@@ -86,9 +109,9 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           query,
           response,
         },
-        collection: initialState?.collection,
+        collectionId,
       });
-    }, [isInitialized, cluster, selectedIndexName, query, response, initialState?.collection]);
+    }, [isInitialized, cluster, selectedIndexName, query, response, collectionId]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: initialState properties are intentionally excluded as this should only run once on mount when clusters load
     React.useEffect(() => {
@@ -113,11 +136,18 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
     React.useEffect(() => {
       (async () => {
-        if (cluster) {
-          setIndices(await elasticsearch.getIndices(cluster));
-        } else {
-          setIndices(undefined);
-          setSelectedIndexName(undefined);
+        try {
+          if (cluster) {
+            setIndices(await elasticsearch.getIndices(cluster));
+          } else {
+            setIndices(undefined);
+            setSelectedIndexName(undefined);
+          }
+        } catch (error) {
+          toast("Failed to fetch indices from the selected cluster.", {
+            description: error instanceof Error ? error.message : String(error),
+          });
+          console.error("Error fetching indices:", error);
         }
       })();
     }, [cluster]);
@@ -126,8 +156,15 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const handleSearch = React.useCallback(() => {
       if (!cluster || !selectedIndexName) return;
       (async () => {
-        const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(query));
-        setResponse(JSON.stringify(response, null, 2));
+        try {
+          const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(query));
+          setResponse(JSON.stringify(response, null, 2));
+        } catch (error) {
+          toast("Failed to execute search query.", {
+            description: error instanceof Error ? error.message : String(error),
+          });
+          console.error("Error executing search query:", error);
+        }
       })();
     }, [query, selectedIndexName, elasticsearch.search]);
 
@@ -173,23 +210,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       ],
       [handleSearch],
     );
-
-    const collection = React.useMemo(() => {
-      const collection: Collection = {
-        id: initialState?.collection?.id ?? uuid4(),
-        type: "elasticsearch",
-        name: initialState?.collection?.name ?? `${cluster?.name ?? "No cluster"} / ${selectedIndexName ?? "No index"}`,
-        content: {
-          type: "search",
-          clusterId: cluster?.id,
-          clusterName: cluster?.name,
-          indexName: selectedIndexName,
-          query,
-          response,
-        },
-      };
-      return collection;
-    }, [cluster, selectedIndexName, query, response, initialState?.collection]);
 
     return (
       <div {...props}>

@@ -291,14 +291,15 @@ export const Clusters = ({ ...props }: ClustersProps) => {
     <div {...props}>
       <div className="flex w-full h-full divide-x divide-gray-300/50">
         <div className="w-full max-w-[250px] flex-1 flex flex-col px-2">
-          <div className="h-fit w-full shrink-0 flex gap-1">
-            <InputGroup className="w-full flex-1">
+          <div className="h-fit w-full shrink-0 flex gap-1 pt-1 items-center">
+            <InputGroup className="w-full flex-1 border-none outline-none ">
               <InputGroupAddon>
                 <Search />
               </InputGroupAddon>
               <InputGroupInput
                 type="text"
                 placeholder="Search clusters..."
+                className="border-none outline-none"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />

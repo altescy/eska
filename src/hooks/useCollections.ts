@@ -49,12 +49,20 @@ export const useCollections = () => {
     [collections],
   );
 
+  const byId = React.useCallback(
+    (id: string) => {
+      return collections.find((col) => col.id === id);
+    },
+    [collections],
+  );
+
   return {
     collections,
     save,
     remove,
     search,
     contains,
+    byId,
     isSaved,
     setIsSaved,
   };

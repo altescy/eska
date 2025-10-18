@@ -56,7 +56,7 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     <div {...props}>
       <div className="flex flex-col gap-2 w-full h-full">
         <div className="flex gap-2 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
-          <div className="flex gap-2 h-full w-fit overflow-x-auto p-0 scrollbar-none">
+          <div className="flex gap-2 h-9 w-fit overflow-y-hidden overflow-x-auto p-0 scrollbar-none">
             {tabs.tabs.map((tab) => (
               <div
                 key={tab.id}
@@ -95,6 +95,7 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
           {tabs.tabs.map((tab) => (
             <Playground
               key={tab.id}
+              collectionId={tab.state.collectionId}
               initialState={tab.state}
               className="w-full h-full min-h-0"
               hidden={tabs.activeTabId !== tab.id}

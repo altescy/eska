@@ -7,6 +7,8 @@ export interface BaseCollection<T extends CollectionType, Content> {
   type: T;
   name: string;
   content: Content;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export type ElasticsearchCollection = BaseCollection<"elasticsearch", ElasticsearchOperationState>;

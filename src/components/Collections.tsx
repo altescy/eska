@@ -1,3 +1,4 @@
+import { ListFilter } from "lucide-react";
 import React from "react";
 import { OperationIcon } from "@/components/Operations";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { useCollections } from "@/hooks/useCollections";
 import { useTabs } from "@/hooks/useTabs";
 import type { Collection, ElasticsearchCollection } from "@/types/collection";
@@ -35,13 +37,14 @@ const ElasticsearchCollectionView = ({ collection, ...props }: ElasticsearchColl
 export interface CollectionsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const Collections = ({ ...props }: CollectionsProps) => {
+  const [query, setQuery] = React.useState("");
   const collections = useCollections();
   const tabs = useTabs();
 
   const handleClickCollection = React.useCallback(
     (collection: Collection) => {
       if (collection.type === "elasticsearch") {
-        let tab = tabs.tabs.find((tab) => tab.state.collection?.id === collection.id);
+        let tab = tabs.tabs.find((tab) => tab.state.collectionId === collection.id);
         if (!tab) {
           tab = tabs.newPlaygroundTab({
             clusterId: collection.content.clusterId,
@@ -52,8 +55,9 @@ export const Collections = ({ ...props }: CollectionsProps) => {
               query: collection.content.query,
               response: collection.content.response,
             },
-            collection: collection,
+            collectionId: collection.id,
           });
+          tab.title = collection.name;
           tabs.add(tab);
         }
         tabs.activate(tab.id);
@@ -62,21 +66,43 @@ export const Collections = ({ ...props }: CollectionsProps) => {
     [tabs],
   );
 
+  const filteredCollections = React.useMemo(() => {
+    if (query.trim() === "") {
+      return collections.collections;
+    }
+    return collections.collections
+      .filter((collection) => collection.name.toLowerCase().includes(query.toLowerCase()))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [collections.collections, query]);
+
   return (
     <div {...props}>
-      <ul className="divide-y divide-white/20 max-h-full overflow-y-auto">
-        {collections.collections.map((collection) => (
-          <li key={collection.id} className="select-none py-1">
-            {collection.type === "elasticsearch" && (
-              <ElasticsearchCollectionView
-                collection={collection}
-                className="rounded-lg hover:bg-white/35 transition-colors cursor-pointer p-2 min-h-[5rem]"
-                onClick={() => handleClickCollection(collection)}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="w-full h-full flex flex-col">
+        <InputGroup className="mt-1 h-9 outline-none border-none bg-white/15 rounded-md">
+          <InputGroupAddon>
+            <ListFilter />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search collections..."
+            className="flex-1 border-none outline-none"
+          />
+        </InputGroup>
+        <ul className="divide-y divide-white/20 max-h-full overflow-y-auto flex-1 min-h-0">
+          {filteredCollections.map((collection) => (
+            <li key={collection.id} className="select-none py-1">
+              {collection.type === "elasticsearch" && (
+                <ElasticsearchCollectionView
+                  collection={collection}
+                  className="rounded-lg hover:bg-white/35 transition-colors cursor-pointer px-3 py-2 min-h-[5rem]"
+                  onClick={() => handleClickCollection(collection)}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
@@ -85,12 +111,14 @@ export interface SaveCollectionDialogProps {
   children: React.ReactNode;
   collection?: Collection;
   disabled?: boolean;
+  onSave?: (collection: Collection) => void;
 }
 
-export const SaveCollectionDialog = ({ collection, children, disabled }: SaveCollectionDialogProps) => {
+export const SaveCollectionDialog = ({ collection, children, disabled, onSave }: SaveCollectionDialogProps) => {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState(collection?.name);
   const collections = useCollections();
+  const tabs = useTabs();
 
   React.useEffect(() => {
     setName(collection?.name);
@@ -106,12 +134,15 @@ export const SaveCollectionDialog = ({ collection, children, disabled }: SaveCol
 
   const handleSave = React.useCallback(() => {
     if (!name || !collection) return;
-    collections.save({
-      ...collection,
-      name: name,
-    });
+    const newCollection: Collection = { ...collection, name: name };
+    collections.save(newCollection);
+
+    const tab = tabs.tabs.find((tab) => tab.state.collectionId === collection.id);
+    if (tab) tabs.update(tab.id, { title: name });
+
+    onSave?.(newCollection);
     setOpen(false);
-  }, [collection, name, collections]);
+  }, [collection, name, collections, onSave, tabs]);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>

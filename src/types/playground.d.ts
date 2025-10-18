@@ -1,9 +1,8 @@
 import { ElasticsearchOperationState } from "./elasticsearchOperation";
-import { ElasticsearchCollection } from "./collection";
 
 export interface PlaygroundState<T extends OperationState = ElasticsearchOperationState> {
+  collectionId: string;
   clusterId?: string;
   clusterName?: string;
   operation?: T;
-  collection?: ElasticsearchCollection;
 }
