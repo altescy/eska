@@ -48,6 +48,15 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
           tabs.close(tabs.activeTabId);
         }
       }
+      // Ctrl/Cmd + Tab to switch to next tab
+      if ((event.ctrlKey || event.metaKey) && event.key === "Tab") {
+        event.preventDefault();
+        if (event.shiftKey) {
+          tabs.previous();
+        } else {
+          tabs.next();
+        }
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);

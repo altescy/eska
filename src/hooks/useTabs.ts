@@ -65,6 +65,22 @@ export const useTabs = () => {
 
   const scrollTo = (tabId: string) => scrollToTab(tabId);
 
+  const next = () => {
+    if (!activeTabId || tabs.length === 0) return;
+    const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    if (currentIndex === -1) return;
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    activate(tabs[nextIndex].id);
+  };
+
+  const previous = () => {
+    if (!activeTabId || tabs.length === 0) return;
+    const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    if (currentIndex === -1) return;
+    const previousIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    activate(tabs[previousIndex].id);
+  };
+
   const newPlaygroundTab = (state?: Partial<PlaygroundState>): Tab => {
     const tab: Tab = {
       id: uuid4(),
@@ -78,5 +94,5 @@ export const useTabs = () => {
     return tab;
   };
 
-  return { tabs, activeTabId, title, add, update, close, activate, scrollTo, newPlaygroundTab };
+  return { tabs, activeTabId, title, add, update, close, activate, scrollTo, next, previous, newPlaygroundTab };
 };
