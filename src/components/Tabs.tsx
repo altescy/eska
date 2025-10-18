@@ -93,7 +93,7 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        <div className="flex-1 min-h-0 w-full h-full">
+        <div className="flex-1 min-h-0 w-full h-full bg-white/40 rounded-xl p-2">
           {tabs.map((tab) => (
             <Playground
               key={tab.id}

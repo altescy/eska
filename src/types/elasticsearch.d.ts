@@ -1,3 +1,5 @@
+export type ElasticsearchOperation = "search";
+
 export interface ElasticsearchField {
   type: string;
   index?: boolean;

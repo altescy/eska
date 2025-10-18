@@ -71,9 +71,12 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
 
       onStateChange?.({
         clusterId: cluster?.id,
-        indexName: selectedIndexName,
-        query,
-        response,
+        operation: {
+          type: "search",
+          indexName: selectedIndexName,
+          query,
+          response,
+        },
       });
     }, [isInitialized, cluster, selectedIndexName, query, response]);
 
@@ -85,14 +88,14 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         // TODO: handle case when initialCluster is not found
         setCluster(initialCluster);
       }
-      if (initialState?.indexName) {
-        setSelectedIndexName(initialState.indexName);
+      if (initialState?.operation?.indexName) {
+        setSelectedIndexName(initialState.operation.indexName);
       }
-      if (initialState?.query) {
-        setQuery(initialState.query);
+      if (initialState?.operation?.query) {
+        setQuery(initialState.operation.query);
       }
-      if (initialState?.response) {
-        setResponse(initialState.response);
+      if (initialState?.operation?.response) {
+        setResponse(initialState.operation.response);
       }
       setIsInitialized(true);
     }, [isInitialized, clusters]);
