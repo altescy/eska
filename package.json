@@ -1,7 +1,26 @@
 {
-  "name": "Eska",
-  "private": true,
+  "name": "eska",
+  "productName": "Eska",
   "version": "0.0.1",
+  "description": "A modern Elasticsearch client built with Electron",
+  "author": "altescy",
+  "license": "MIT",
+  "homepage": "https://github.com/altescy/eska#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/altescy/eska.git"
+  },
+  "bugs": {
+    "url": "https://github.com/altescy/eska/issues"
+  },
+  "keywords": [
+    "elasticsearch",
+    "electron",
+    "client",
+    "gui",
+    "desktop-app"
+  ],
+  "private": true,
   "type": "module",
   "scripts": {
     "setup-electron": "cd node_modules/electron && node install.js",
