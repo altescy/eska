@@ -14,6 +14,13 @@ cask "eska" do
 
   app "Eska.app"
 
+  # Remove quarantine attribute to allow running unsigned app
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Eska.app"],
+                   sudo: false
+  end
+
   zap trash: [
     "~/Library/Application Support/Eska",
     "~/Library/Caches/jp.altescy.eska",

@@ -75,3 +75,18 @@ shasum -a 256 Eska-Mac-0.0.1-Installer.dmg
 - The Cask file must be in the `Casks/` directory at the repository root
 - DMG files are automatically uploaded to GitHub Releases by the CI workflow
 - Users will automatically get updates when they run `brew upgrade`
+
+## Code Signing and Security
+
+The app is currently distributed without Apple Developer ID code signing. To allow the app to run without being blocked by macOS Gatekeeper:
+
+1. **electron-builder.json5** is configured with:
+   - `"identity": null` - Skip code signing
+   - `"hardenedRuntime": false` - Disable hardened runtime
+   - `"gatekeeperAssess": false` - Skip Gatekeeper assessment
+
+2. **Cask formula** includes a `postflight` script that removes the quarantine attribute from the app after installation
+
+This allows Homebrew users to install and run the app without seeing "This app is damaged" warnings.
+
+**Note**: For production distribution outside of Homebrew, consider obtaining an Apple Developer ID certificate for proper code signing.

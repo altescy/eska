@@ -17,7 +17,10 @@
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-Mac-${version}-Installer.${ext}"
+    "artifactName": "${productName}-Mac-${version}-Installer.${ext}",
+    "identity": null,
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false
   },
   "win": {
     "icon": "build/icon-256.png",
