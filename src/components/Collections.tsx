@@ -128,14 +128,26 @@ export interface SaveCollectionDialogProps {
   children: React.ReactNode;
   collection?: Collection;
   disabled?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSave?: (collection: Collection) => void;
 }
 
-export const SaveCollectionDialog = ({ collection, children, disabled, onSave }: SaveCollectionDialogProps) => {
-  const [open, setOpen] = React.useState(false);
+export const SaveCollectionDialog = ({
+  collection,
+  children,
+  disabled,
+  open: controlledOpen,
+  onOpenChange,
+  onSave,
+}: SaveCollectionDialogProps) => {
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [name, setName] = React.useState(collection?.name);
   const collections = useCollections();
   const tabs = useTabs();
+
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
 
   React.useEffect(() => {
     setName(collection?.name);
@@ -159,7 +171,7 @@ export const SaveCollectionDialog = ({ collection, children, disabled, onSave }:
 
     onSave?.(newCollection);
     setOpen(false);
-  }, [collection, name, collections, onSave, tabs]);
+  }, [collection, name, collections, onSave, tabs, setOpen]);
 
   return (
     <Dialog onOpenChange={setOpen} open={open}>

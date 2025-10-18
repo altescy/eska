@@ -44,7 +44,7 @@ export interface PlaygroundHandler {
 }
 
 export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
-  ({ collectionId, initialState, onStateChange, ...props }, ref) => {
+  ({ collectionId, initialState, onStateChange, hidden, ...props }, ref) => {
     const [isInitialized, setIsInitialized] = React.useState(false);
     const [query, setQuery] = React.useState(DEFAULT_QUERY);
     const [response, setResponse] = React.useState("");
@@ -52,6 +52,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const [cluster, setCluster] = React.useState<Cluster>();
     const [indices, setIndices] = React.useState<ElasticsearchGetIndicesResponse>();
     const [selectedIndexName, setSelectedIndexName] = React.useState<string>();
+    const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
     const clipboardForQuery = useClipboard();
 
     const elasticsearch = useElasticsearch();
@@ -132,6 +133,24 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       }
       setIsInitialized(true);
     }, [isInitialized, clusters]);
+
+    React.useEffect(() => {
+      // Only attach keyboard listener if this Playground is visible
+      if (hidden) return;
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        // Ctrl/Cmd + S to open save collection dialog
+        if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+          event.preventDefault();
+          setSaveDialogOpen(true);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }, [hidden]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
     React.useEffect(() => {
@@ -258,7 +277,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               onSelectItem={(selected) => setSelectedIndexName(selected?.key)}
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
-            <SaveCollectionDialog collection={collection}>
+            <SaveCollectionDialog collection={collection} open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
                 {collections.isSaved ? <Check /> : <Save />}
               </Button>

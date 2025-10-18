@@ -13,7 +13,7 @@ const scrollToTab = (tabId: string) => {
   }
 };
 
-export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export type TabsHandler = Record<string, never>;
 
