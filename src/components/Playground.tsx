@@ -40,9 +40,11 @@ export const Playground = ({ ...props }: PlaygroundProps) => {
   const clipboardForQuery = useClipboard();
 
   const elasticsearch = useElasticsearch({
-    host: ELASTICSEARCH_HOST,
+    id: "local-elasticsearch",
+    name: "Local Elasticsearch",
     auth: {
       type: "basic",
+      host: ELASTICSEARCH_HOST,
       username: ELASTICSEARCH_USERNAME,
       password: ELASTICSEARCH_PASSWORD,
     },

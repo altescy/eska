@@ -1,23 +1,24 @@
 import React from "react";
 import { quote } from "@/lib/elasticsearch";
+import type { Cluster } from "@/types/cluster";
 import type {
   ElaseticsearchSearchResponse,
-  ElasticsearchConfig,
+  ElasticsearchClusterHealthResponse,
   ElasticsearchGetIndicesResponse,
 } from "@/types/elasticsearch";
 
-export const useElasticsearch = (config: ElasticsearchConfig) => {
+export const useElasticsearch = (cluster: Cluster) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const headers = React.useMemo((): Record<string, string> => {
-    if (config.auth?.type === "basic") {
+    if (cluster.auth?.type === "basic") {
       return {
         "Content-Type": "application/json",
-        Authorization: `Basic ${btoa(`${config.auth.username}:${config.auth.password}`)}`,
+        Authorization: `Basic ${btoa(`${cluster.auth.username}:${cluster.auth.password}`)}`,
       };
     }
     return { "Content-Type": "application/json" };
-  }, [config.auth]);
+  }, [cluster.auth]);
 
   const request = React.useCallback(
     async <Response>(
@@ -30,7 +31,7 @@ export const useElasticsearch = (config: ElasticsearchConfig) => {
     ): Promise<Response> => {
       try {
         setIsLoading(true);
-        const url = new URL(`${config.host}/${path}`);
+        const url = new URL(path, cluster.auth.host);
         if (data?.params) {
           Object.entries(data.params).forEach(([key, value]) => {
             url.searchParams.append(key, String(value));
@@ -49,19 +50,26 @@ export const useElasticsearch = (config: ElasticsearchConfig) => {
         setIsLoading(false);
       }
     },
-    [config.host, headers],
+    [cluster.auth, headers],
+  );
+
+  const ping = React.useCallback(async () => await request("GET", "/"), [request]);
+
+  const health = React.useCallback(
+    async (): Promise<ElasticsearchClusterHealthResponse> => await request("GET", "/_cluster/health"),
+    [request],
   );
 
   const search = React.useCallback(
-    async (index: string, query: object) =>
-      await request<ElaseticsearchSearchResponse>("POST", `${quote(index)}/_search`, { body: query }),
+    async (index: string, query: object): Promise<ElaseticsearchSearchResponse> =>
+      await request("POST", `${quote(index)}/_search`, { body: query }),
     [request],
   );
 
   const getIndices = React.useCallback(
-    async (index: string = "*") => await request<ElasticsearchGetIndicesResponse>("GET", `${quote(index)}`),
+    async (index: string = "*"): Promise<ElasticsearchGetIndicesResponse> => await request("GET", `${quote(index)}`),
     [request],
   );
 
-  return { search, getIndices, isLoading };
+  return { ping, health, search, getIndices, isLoading };
 };

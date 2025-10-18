@@ -1,7 +1,16 @@
 import { Folder, Server, Settings } from "lucide-react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Clusters } from "@/components/Clusters";
 import { Playground } from "@/components/Playground";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import "@fontsource-variable/fira-code";
 
 function App() {
@@ -9,9 +18,20 @@ function App() {
     <div className="h-screen w-screen overflow-hidden">
       <div className="w-full h-full flex pt-1 overflow-hidden text-gray-800">
         <div className="pt-10 pb-2 w-[80px] shrink-0 h-full flex flex-col items-center app-region-drag">
-          <Button variant="ghost" size="icon-lg">
-            <Server />
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon-lg">
+                <Server />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px] bg-white/70 backdrop-blur-2xl backdrop-brightness-150">
+              <DialogHeader>
+                <DialogTitle>Clusters</DialogTitle>
+                <DialogDescription>Manage your Elasticsearch cluster configurations.</DialogDescription>
+              </DialogHeader>
+              <Clusters className="h-96 overflow-y-auto" />
+            </DialogContent>
+          </Dialog>
           <Button variant="ghost" size="icon-lg">
             <Folder />
           </Button>

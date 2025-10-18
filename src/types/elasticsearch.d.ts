@@ -1,16 +1,3 @@
-export interface ElasticsearchBasicAuth {
-  type: "basic";
-  username: string;
-  password: string;
-}
-
-export type ElasticsearchAuth = ElasticsearchBasicAuth;
-
-export interface ElasticsearchConfig {
-  host: string;
-  auth?: ElasticsearchAuth;
-}
-
 export interface ElasticsearchField {
   type: string;
   index?: boolean;
@@ -37,6 +24,24 @@ export interface ElasticsearchIndex {
   aliases: { [alias: string]: JSONValue };
   mappings: ElasticsearchIndexMapping;
   settings: { [key: string]: JSONValue };
+}
+
+export interface ElasticsearchClusterHealthResponse {
+  cluster_name: string;
+  status: "green" | "yellow" | "red";
+  timed_out: boolean;
+  number_of_nodes: number;
+  number_of_data_nodes: number;
+  active_primary_shards: number;
+  active_shards: number;
+  relocating_shards: number;
+  initializing_shards: number;
+  unassigned_shards: number;
+  delayed_unassigned_shards: number;
+  number_of_pending_tasks: number;
+  number_of_in_flight_fetch: number;
+  task_max_waiting_in_queue_millis: number;
+  active_shards_percent_as_number: number;
 }
 
 export interface ElaseticsearchSearchResponse<T = JSONValue> {
