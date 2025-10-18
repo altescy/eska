@@ -18,14 +18,22 @@ Before creating a release, ensure:
 - All tests pass (`pnpm test`)
 - Code is linted (`pnpm lint`)
 - Application builds successfully (`pnpm build`)
+- Update version in `package.json` (e.g., `"version": "0.1.0"`)
+- Update version in `Casks/eska.rb` (e.g., `version "0.1.0"`)
 
 ### 2. Create a Git Tag
 
 ```bash
+# Update version in package.json and Casks/eska.rb
+# Then commit the changes
+git add package.json Casks/eska.rb
+git commit -m "Bump version to 0.1.0"
+
 # Create a new version tag (e.g., v0.1.0)
 git tag v0.1.0
 
-# Push the tag to GitHub
+# Push the changes and tag to GitHub
+git push origin main
 git push origin v0.1.0
 ```
 
@@ -51,6 +59,14 @@ Once the release is published:
 ### 5. Monitor the Build
 
 Check the [Actions tab](https://github.com/altescy/eska/actions) to monitor the build progress.
+
+### 6. Update Homebrew Users
+
+Once the release is published and artifacts are uploaded:
+
+- Homebrew users will automatically see the new version when they run `brew upgrade --cask eska`
+- The Cask formula in `Casks/eska.rb` should already be updated (done in step 1)
+- No additional steps are needed for Homebrew distribution
 
 ## Versioning
 

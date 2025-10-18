@@ -22,6 +22,19 @@ A modern Elasticsearch client built with Electron, React, and TypeScript.
 
 ## Installation
 
+### macOS (Homebrew)
+
+```bash
+brew tap altescy/eska https://github.com/altescy/eska
+brew install --cask eska
+```
+
+Or in a single command:
+
+```bash
+brew install --cask altescy/eska/eska
+```
+
 ### Download Pre-built Binaries
 
 Download the latest release for your platform from the [Releases page](https://github.com/altescy/eska/releases/latest):
