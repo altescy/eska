@@ -265,10 +265,10 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               }))}
               placeholder="Select cluster"
               onSelectItem={(selected) => setCluster(clusters.find((c) => c.id === selected?.key))}
-              className="w-[200px] shrink-0 bg-white/40 rounded-lg overflow-hidden"
+              className="w-[200px] shrink-0 bg-white/40 rounded-l-lg overflow-hidden"
             />
             <Select defaultValue="search">
-              <SelectTrigger className="w-[120px] shrink-0 border-none bg-white/40 rounded-l-lg rounded-r-none">
+              <SelectTrigger className="w-[120px] shrink-0 border-none bg-white/40 rounded-none rounded-r-none">
                 <SelectValue placeholder="Select a fruit" />
               </SelectTrigger>
               <SelectContent>
