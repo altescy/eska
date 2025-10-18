@@ -5,6 +5,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
 import { SaveCollectionDialog } from "@/components/Collections";
 import { Editor } from "@/components/Editor";
+import { Fields } from "@/components/Fields";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import {
@@ -21,7 +22,7 @@ import { useClipboard } from "@/hooks/useClipboard";
 import { useClusters } from "@/hooks/useClusters";
 import { useCollections } from "@/hooks/useCollections";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
-import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
+import { extractFields, generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
 import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
 import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
@@ -52,6 +53,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const [cluster, setCluster] = React.useState<Cluster>();
     const [indices, setIndices] = React.useState<ElasticsearchGetIndicesResponse>();
     const [selectedIndexName, setSelectedIndexName] = React.useState<string>();
+    const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
     const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
     const clipboardForQuery = useClipboard();
 
@@ -75,6 +77,19 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       }),
       [cluster, selectedIndexName, query, response, collectionId],
     );
+
+    const composedQuery = React.useMemo(() => {
+      if (selectedFields.length === 0) {
+        return query;
+      }
+      try {
+        const parsed = JSON.parse(query);
+        parsed._source = [...(parsed._source ?? []), ...selectedFields];
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return query;
+      }
+    }, [query, selectedFields]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: collections.byId is stable
     const collection = React.useMemo((): Collection => {
@@ -176,7 +191,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       if (!cluster || !selectedIndexName) return;
       (async () => {
         try {
-          const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(query));
+          const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(composedQuery));
           setResponse(JSON.stringify(response, null, 2));
         } catch (error) {
           toast("Failed to execute search query.", {
@@ -185,7 +200,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           console.error("Error executing search query:", error);
         }
       })();
-    }, [query, selectedIndexName, elasticsearch.search]);
+    }, [composedQuery, selectedIndexName, elasticsearch.search]);
 
     const handleFormatQuery = React.useCallback(() => {
       try {
@@ -228,6 +243,11 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         },
       ],
       [handleSearch],
+    );
+
+    const fields = React.useMemo(
+      () => (selectedIndex ? extractFields(selectedIndex.mappings) : undefined),
+      [selectedIndex],
     );
 
     return (
@@ -313,15 +333,15 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
                     </Button>
                   </div>
                 </Panel>
-                {selectedIndex && (
+                {fields && (
                   <>
                     <PanelResizeHandle />
                     <Panel className="w-full h-full">
-                      <div className="text-sm text-gray-500 p-1">
-                        <pre className="mt-2 overflow-auto">
-                          {selectedIndex && <code>{JSON.stringify(selectedIndex, null, 2)}</code>}
-                        </pre>
-                      </div>
+                      <Fields
+                        fields={fields}
+                        className="w-full h-full overflow-hidden"
+                        onSelectionChange={setSelectedFields}
+                      />
                     </Panel>
                   </>
                 )}

@@ -1,11 +1,11 @@
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { clsx } from "clsx";
+import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { cn } from "@/lib/utils";
 
 export interface ComboboxProps extends React.HTMLAttributes<HTMLDivElement> {
   items?: { key: string; value: string; label: React.JSX.Element | string; details?: React.JSX.Element | string }[];
