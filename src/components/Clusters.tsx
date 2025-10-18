@@ -28,7 +28,7 @@ interface ClusterNoAuthConfigProps extends React.HTMLAttributes<HTMLDivElement> 
   auth: NoAuth;
 }
 
-interface ClusterNoAuthConfigHandler extends ClusterAuthConfigHandler<NoAuth> {}
+interface ClusterNoAuthConfigHandler extends ClusterAuthConfigHandler<NoAuth> { }
 
 const ClusterNoAuthConfig = React.forwardRef<ClusterNoAuthConfigHandler, ClusterNoAuthConfigProps>(
   ({ auth, ...props }, ref) => {
@@ -62,7 +62,7 @@ interface ClusterBasicAuthConfigProps extends React.HTMLAttributes<HTMLDivElemen
   auth: BasicAuth;
 }
 
-interface ClusterBasicAuthConfigHandler extends ClusterAuthConfigHandler<BasicAuth> {}
+interface ClusterBasicAuthConfigHandler extends ClusterAuthConfigHandler<BasicAuth> { }
 
 const ClusterBasicAuthConfig = React.forwardRef<ClusterBasicAuthConfigHandler, ClusterBasicAuthConfigProps>(
   ({ auth, ...props }, ref) => {
@@ -212,8 +212,8 @@ export const ClusterInfo = ({ cluster, ...props }: ClusterInfoProps) => {
   return (
     <div {...props}>
       <fieldset className="border-2 border-gray-400/50 rounded-lg py-2 px-6 bg-white/10">
-        <legend className="text-lg font-semibold px-2">
-          <Activity className="inline-block mr-2" />
+        <legend className="text-lg font-semibold px-4">
+          <Activity className="inline-block mr-3" />
           Cluster Health
         </legend>
         {elasticsearch.isLoading ? (
@@ -241,7 +241,7 @@ export const ClusterInfo = ({ cluster, ...props }: ClusterInfoProps) => {
   );
 };
 
-export interface ClustersProps extends React.HTMLAttributes<HTMLDivElement> {}
+export interface ClustersProps extends React.HTMLAttributes<HTMLDivElement> { }
 
 export const Clusters = ({ ...props }: ClustersProps) => {
   const [query, setQuery] = React.useState("");
