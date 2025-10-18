@@ -4,6 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -28,7 +29,7 @@ interface ClusterNoAuthConfigProps extends React.HTMLAttributes<HTMLDivElement> 
   auth: NoAuth;
 }
 
-interface ClusterNoAuthConfigHandler extends ClusterAuthConfigHandler<NoAuth> { }
+interface ClusterNoAuthConfigHandler extends ClusterAuthConfigHandler<NoAuth> {}
 
 const ClusterNoAuthConfig = React.forwardRef<ClusterNoAuthConfigHandler, ClusterNoAuthConfigProps>(
   ({ auth, ...props }, ref) => {
@@ -62,7 +63,7 @@ interface ClusterBasicAuthConfigProps extends React.HTMLAttributes<HTMLDivElemen
   auth: BasicAuth;
 }
 
-interface ClusterBasicAuthConfigHandler extends ClusterAuthConfigHandler<BasicAuth> { }
+interface ClusterBasicAuthConfigHandler extends ClusterAuthConfigHandler<BasicAuth> {}
 
 const ClusterBasicAuthConfig = React.forwardRef<ClusterBasicAuthConfigHandler, ClusterBasicAuthConfigProps>(
   ({ auth, ...props }, ref) => {
@@ -241,13 +242,15 @@ export const ClusterInfo = ({ cluster, ...props }: ClusterInfoProps) => {
   );
 };
 
-export interface ClustersProps extends React.HTMLAttributes<HTMLDivElement> { }
+export interface ClustersProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export const Clusters = ({ ...props }: ClustersProps) => {
   const [query, setQuery] = React.useState("");
   const [clusters, setClusters] = useClusters();
   const [selectedCluster, setSelectedCluster] = React.useState<Cluster>();
   const [open, setOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [clusterToDelete, setClusterToDelete] = React.useState<Cluster>();
   const dialogRef = React.useRef<ClusterConfigHandler<Cluster>>(null);
 
   const handleNewCluster = () => {
@@ -270,10 +273,19 @@ export const Clusters = ({ ...props }: ClustersProps) => {
   };
 
   const handleDeleteCluster = (cluster: Cluster) => {
-    setClusters((prev) => prev.filter((c) => c.id !== cluster.id));
-    if (selectedCluster?.id === cluster.id) {
-      setSelectedCluster(undefined);
+    setClusterToDelete(cluster);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (clusterToDelete) {
+      setClusters((prev) => prev.filter((c) => c.id !== clusterToDelete.id));
+      if (selectedCluster?.id === clusterToDelete.id) {
+        setSelectedCluster(undefined);
+      }
     }
+    setDeleteDialogOpen(false);
+    setClusterToDelete(undefined);
   };
 
   const filteredClusters = React.useMemo(() => {
@@ -351,7 +363,7 @@ export const Clusters = ({ ...props }: ClustersProps) => {
                     <Pen />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => handleDeleteCluster(selectedCluster)}>
-                    <Trash className="mr-2" />
+                    <Trash />
                   </Button>
                 </div>
               </div>
@@ -362,6 +374,24 @@ export const Clusters = ({ ...props }: ClustersProps) => {
           )}
         </div>
       </div>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md bg-[#ffffffa0] backdrop-blur-3xl backdrop-brightness-200">
+          <DialogHeader>
+            <DialogTitle>Delete Cluster</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the cluster "{clusterToDelete?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Cancel</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
