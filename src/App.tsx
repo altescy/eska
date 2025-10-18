@@ -1,8 +1,9 @@
 import { clsx } from "clsx";
-import { Folder, Server, Settings } from "lucide-react";
+import { Folder, Server, Settings as SettingsIcon } from "lucide-react";
 import React from "react";
 import { type ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Clusters } from "@/components/Clusters";
+import { Settings } from "@/components/Settings";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -72,14 +73,25 @@ function App() {
               <TooltipContent side="right">Toggle collections</TooltipContent>
             </Tooltip>
             <div className="flex-1" />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon-lg">
-                  <Settings />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Open settings</TooltipContent>
-            </Tooltip>
+            <Dialog>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon-lg">
+                      <SettingsIcon />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right">Open settings</TooltipContent>
+              </Tooltip>
+              <DialogContent className="sm:max-w-[600px] bg-white/70 backdrop-blur-2xl backdrop-brightness-150">
+                <DialogHeader>
+                  <DialogTitle>Settings</DialogTitle>
+                  <DialogDescription>Configure application preferences and manage data.</DialogDescription>
+                </DialogHeader>
+                <Settings className="h-96 overflow-y-auto" />
+              </DialogContent>
+            </Dialog>
           </div>
           <PanelGroup direction="horizontal" className="w-full h-full flex-1">
             <Panel

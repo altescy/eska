@@ -1,14 +1,23 @@
 import { type Monaco, default as MonacoEditor } from "@monaco-editor/react";
+import { useAtom } from "jotai";
 import type * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
+import { initVimMode } from "monaco-vim";
 import React from "react";
+import { editorSettingsAtom } from "@/atoms/editor";
 
-const DEFAULT_OPTIONS: MonacoAPI.editor.IStandaloneEditorConstructionOptions = {
-  minimap: { enabled: false },
-  wordWrap: "on",
+const getEditorOptions = (settings: {
+  fontSize: number;
+  tabSize: number;
+  wordWrap: "on" | "off";
+  minimap: boolean;
+}): MonacoAPI.editor.IStandaloneEditorConstructionOptions => ({
+  fontSize: settings.fontSize,
+  minimap: { enabled: settings.minimap },
+  wordWrap: settings.wordWrap,
+  tabSize: settings.tabSize,
   wrappingIndent: "indent",
   scrollBeyondLastLine: false,
   fontFamily: "'Fira Code Variable', monospace",
-  tabSize: 2,
   formatOnPaste: true,
   formatOnType: true,
   automaticLayout: true,
@@ -26,7 +35,7 @@ const DEFAULT_OPTIONS: MonacoAPI.editor.IStandaloneEditorConstructionOptions = {
     indentation: false,
     highlightActiveIndentation: false,
   },
-};
+});
 
 export interface EditorProps {
   language: string;
@@ -41,6 +50,7 @@ export interface EditorProps {
 export const Editor = ({ language, value, readOnly, schemas, actions, onChange, lineNumbers }: EditorProps) => {
   const [editor, setEditor] = React.useState<MonacoAPI.editor.IStandaloneCodeEditor | null>(null);
   const [monaco, setMonaco] = React.useState<Monaco | null>(null);
+  const [editorSettings] = useAtom(editorSettingsAtom);
 
   const handleEditorWillMount = React.useCallback((monacoInstance: Monaco) => {
     setMonaco(monacoInstance);
@@ -79,6 +89,20 @@ export const Editor = ({ language, value, readOnly, schemas, actions, onChange, 
     monaco?.editor.setTheme("eska");
   }, [monaco]);
 
+  React.useEffect(() => {
+    if (!editor) return;
+
+    let vimMode: { dispose: () => void } | null = null;
+
+    if (editorSettings.keyBinding === "vim") {
+      vimMode = initVimMode(editor, document.getElementById("vim-status-bar") || undefined);
+    }
+
+    return () => {
+      vimMode?.dispose();
+    };
+  }, [editor, editorSettings.keyBinding]);
+
   return (
     <MonacoEditor
       theme="eska"
@@ -88,7 +112,7 @@ export const Editor = ({ language, value, readOnly, schemas, actions, onChange, 
       defaultLanguage={language}
       beforeMount={handleEditorWillMount}
       onMount={handlEditorDidMount}
-      options={{ ...DEFAULT_OPTIONS, readOnly, lineNumbers }}
+      options={{ ...getEditorOptions(editorSettings), readOnly, lineNumbers }}
       onChange={onChange}
     />
   );
