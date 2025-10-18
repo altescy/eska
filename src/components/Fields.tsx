@@ -8,6 +8,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getFieldTypeColor } from "@/lib/elasticsearch";
 import type { ElasticsearchField } from "@/types/elasticsearch";
 
@@ -146,7 +147,9 @@ const FieldTableRow = React.memo(
           {field.index && <Funnel className="block text-muted-foreground" size={14} />}
         </td>
         <td className="pl-2 border-b border-b-gray-700/10">
-          <span className={`${getFieldTypeColor(field.type)} text-gray-700 rounded px-1 py-0.5 font-mono text-xs whitespace-nowrap`}>
+          <span
+            className={`${getFieldTypeColor(field.type)} text-gray-700 rounded px-1 py-0.5 font-mono text-xs whitespace-nowrap`}
+          >
             {field.type}
           </span>
         </td>
@@ -214,6 +217,42 @@ export const FieldTable = React.forwardRef<FieldTableHandler, FieldTableProps>(
   },
 );
 
+const FilterHint = () => {
+  return (
+    <div className="space-y-2 text-gray-800">
+      <h4 className="font-semibold text-sm">Filter Syntax</h4>
+      <div className="text-xs space-y-1.5 text-muted-foreground">
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">@index</code> - Indexed fields
+        </div>
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">@source</code> - Source fields
+        </div>
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">@selected</code> - Selected fields
+        </div>
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">:text</code> - Filter by type
+        </div>
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">-@index</code> - Exclude indexed
+        </div>
+        <div>
+          <code className="bg-muted px-1 py-0.5 rounded">-:object</code> - Exclude type
+        </div>
+      </div>
+      <div className="text-xs pt-2 border-t">
+        <div className="font-medium mb-1">Examples:</div>
+        <div className="space-y-0.5 text-muted-foreground font-mono ml-1">
+          <div>@index :keyword</div>
+          <div>@selected name</div>
+          <div>-:object -:nested</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export interface FieldsProps extends React.HTMLAttributes<HTMLDivElement> {
   fields: Record<string, ElasticsearchField>;
   disabled?: boolean;
@@ -261,7 +300,14 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
                   {selectedFieldCount}
                 </InputGroupText>
               ) : (
-                <ListFilter className="text-muted-foreground" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <ListFilter className="text-muted-foreground w-full h-full cursor-help" />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-80">
+                    <FilterHint />
+                  </PopoverContent>
+                </Popover>
               )}
             </InputGroupAddon>
             <InputGroupInput
@@ -269,7 +315,7 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
               placeholder="Filter fields..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full"
+              className="w-full text-sm"
             />
             {query && (
               <InputGroupButton
@@ -281,16 +327,13 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
               </InputGroupButton>
             )}
             {selectedFieldCount > 0 && (
-              <>
-
-                <InputGroupButton
-                  onClick={() => tableRef.current?.clearSelection()}
-                  disabled={disabled}
-                  className="hover:bg-gray-300/40 mr-1 text-gray-600"
-                >
-                  <BrushCleaning />
-                </InputGroupButton>
-              </>
+              <InputGroupButton
+                onClick={() => tableRef.current?.clearSelection()}
+                disabled={disabled}
+                className="hover:bg-gray-300/40 mr-1 text-gray-600"
+              >
+                <BrushCleaning />
+              </InputGroupButton>
             )}
           </InputGroup>
         </div>
