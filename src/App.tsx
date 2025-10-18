@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import "@fontsource-variable/fira-code";
 import { Collections } from "@/components/Collections";
 import { Tabs } from "@/components/Tabs";
@@ -39,11 +40,16 @@ function App() {
         <div className="w-full h-full flex overflow-hidden text-gray-800">
           <div className="pt-10 pb-2 w-[80px] shrink-0 h-full flex flex-col gap-2 items-center app-region-drag">
             <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon-lg" className="hover:bg-white/45">
-                  <Server />
-                </Button>
-              </DialogTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon-lg" className="hover:bg-white/45">
+                      <Server />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="right">Manage clusters</TooltipContent>
+              </Tooltip>
               <DialogContent className="sm:max-w-[800px] bg-white/70 backdrop-blur-2xl backdrop-brightness-150">
                 <DialogHeader>
                   <DialogTitle>Clusters</DialogTitle>
@@ -52,18 +58,28 @@ function App() {
                 <Clusters className="h-96 overflow-y-auto" />
               </DialogContent>
             </Dialog>
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              className={clsx(openCollections ? "bg-white/60 hover:bg-white/45" : "hover:bg-white/45")}
-              onClick={toggleCollections}
-            >
-              <Folder />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  className={clsx(openCollections ? "bg-white/60 hover:bg-white/45" : "hover:bg-white/45")}
+                  onClick={toggleCollections}
+                >
+                  <Folder />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Toggle collections</TooltipContent>
+            </Tooltip>
             <div className="flex-1" />
-            <Button variant="ghost" size="icon-lg">
-              <Settings />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-lg">
+                  <Settings />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Open settings</TooltipContent>
+            </Tooltip>
           </div>
           <PanelGroup direction="horizontal" className="w-full h-full flex-1">
             <Panel
@@ -75,7 +91,7 @@ function App() {
               onCollapse={() => setOpenCollections(false)}
             >
               <div className="h-1 app-region-drag" />
-              <Collections className="w-full h-full flex-1 min-h-0 pr-2" />
+              <Collections className="w-full h-full flex-1 min-h-0 pl-1 pr-2" />
             </Panel>
             <PanelResizeHandle />
             <Panel className="flex flex-col pt-0 pr-2 pb-2 w-full h-full min-h-0">

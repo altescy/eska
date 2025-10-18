@@ -9,6 +9,7 @@ import {
   InputGroupText,
 } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getFieldTypeColor } from "@/lib/elasticsearch";
 import type { ElasticsearchField } from "@/types/elasticsearch";
 
@@ -318,22 +319,32 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
               className="w-full text-sm"
             />
             {query && (
-              <InputGroupButton
-                onClick={() => setQuery("")}
-                disabled={query.trim() === ""}
-                className="hover:bg-white/20 "
-              >
-                <X />
-              </InputGroupButton>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InputGroupButton
+                    onClick={() => setQuery("")}
+                    disabled={query.trim() === ""}
+                    className="hover:bg-white/20 "
+                  >
+                    <X />
+                  </InputGroupButton>
+                </TooltipTrigger>
+                <TooltipContent>Clear filter</TooltipContent>
+              </Tooltip>
             )}
             {selectedFieldCount > 0 && (
-              <InputGroupButton
-                onClick={() => tableRef.current?.clearSelection()}
-                disabled={disabled}
-                className="hover:bg-gray-300/40 mr-1 text-gray-600"
-              >
-                <BrushCleaning />
-              </InputGroupButton>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <InputGroupButton
+                    onClick={() => tableRef.current?.clearSelection()}
+                    disabled={disabled}
+                    className="hover:bg-gray-300/40 mr-1 text-gray-600"
+                  >
+                    <BrushCleaning />
+                  </InputGroupButton>
+                </TooltipTrigger>
+                <TooltipContent>Clear selection</TooltipContent>
+              </Tooltip>
             )}
           </InputGroup>
         </div>

@@ -15,6 +15,7 @@ import {
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useClusters } from "@/hooks/useClusters";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { uuid4 } from "@/lib/uuid";
@@ -317,11 +318,16 @@ export const Clusters = ({ ...props }: ClustersProps) => {
               />
             </InputGroup>
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild className="px-5 py-2 w-fit shrink-0">
-                <Button variant="ghost" size="sm" onClick={handleNewCluster}>
-                  <Plus />
-                </Button>
-              </DialogTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild className="px-5 py-2 w-fit shrink-0">
+                    <Button variant="ghost" size="sm" onClick={handleNewCluster}>
+                      <Plus />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Add cluster</TooltipContent>
+              </Tooltip>
               <DialogContent className="max-w-lg bg-[#ffffffa0] backdrop-blur-3xl backdrop-brightness-200">
                 <DialogHeader>
                   <DialogTitle>Add Cluster</DialogTitle>
@@ -359,12 +365,22 @@ export const Clusters = ({ ...props }: ClustersProps) => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl font-semibold">{selectedCluster.name}</h3>
                 <div className="grid gap-1 grid-flow-col">
-                  <Button variant="ghost" size="icon" onClick={() => handleEditCluster(selectedCluster)}>
-                    <Pen />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteCluster(selectedCluster)}>
-                    <Trash />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditCluster(selectedCluster)}>
+                        <Pen />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit cluster</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteCluster(selectedCluster)}>
+                        <Trash />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete cluster</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               <ClusterInfo cluster={selectedCluster} />

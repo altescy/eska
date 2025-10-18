@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useClusters } from "@/hooks/useClusters";
 import { useCollections } from "@/hooks/useCollections";
@@ -298,9 +299,14 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
             <SaveCollectionDialog collection={collection} open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-              <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
-                {collections.isSaved ? <Check /> : <Save />}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
+                    {collections.isSaved ? <Check /> : <Save />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{collections.isSaved ? "Saved" : "Save collection"}</TooltipContent>
+              </Tooltip>
             </SaveCollectionDialog>
           </div>
           <PanelGroup direction="horizontal" className="w-full h-full flex-1 min-h-0">
@@ -317,20 +323,35 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
                     />
                   </div>
                   <div className="w-fit h-full shrink-0 flex flex-col gap-2 items-center text-gray-700">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={handleSearch}
-                      disabled={!selectedIndex || elasticsearch.isLoading}
-                    >
-                      {elasticsearch.isLoading ? <Spinner /> : <Play />}
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={handleFormatQuery}>
-                      <Sparkles />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => clipboardForQuery.copyToClipboard(query)}>
-                      {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={handleSearch}
+                          disabled={!selectedIndex || elasticsearch.isLoading}
+                        >
+                          {elasticsearch.isLoading ? <Spinner /> : <Play />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Run query</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={handleFormatQuery}>
+                          <Sparkles />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Format query</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => clipboardForQuery.copyToClipboard(query)}>
+                          {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{clipboardForQuery.isCopied ? "Copied" : "Copy query"}</TooltipContent>
+                    </Tooltip>
                   </div>
                 </Panel>
                 {fields && (
