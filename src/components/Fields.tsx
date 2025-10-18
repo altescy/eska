@@ -1,43 +1,43 @@
-import { Funnel, ListFilter, X } from "lucide-react";
+import { BrushCleaning, Funnel, ListFilter, X } from "lucide-react";
 import React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group";
 import type { ElasticsearchField } from "@/types/elasticsearch";
 
 interface FieldTableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   name: string;
   field: ElasticsearchField;
+  selected?: boolean;
   disabled?: boolean;
   onSelectionChange?: (selected: boolean) => void;
 }
 
 const FieldTableRow = React.memo(
-  ({ name, field, disabled = false, onClick, onSelectionChange, ...props }: FieldTableRowProps) => {
-    const [selected, setSelected] = React.useState(false);
-
+  ({ name, field, selected = false, disabled = false, onClick, onSelectionChange, ...props }: FieldTableRowProps) => {
     const handleCheckboxChange = React.useCallback(
       (checked: boolean) => {
         if (!disabled) {
-          setSelected(checked);
+          onSelectionChange?.(checked);
         }
       },
-      [disabled],
+      [disabled, onSelectionChange],
     );
 
     const handleRowClick = React.useCallback(
       (event: React.MouseEvent<HTMLTableRowElement>) => {
         if (!disabled && field.source) {
-          setSelected((prev) => !prev);
+          onSelectionChange?.(!selected);
         }
         onClick?.(event);
       },
-      [disabled, onClick, field.source],
+      [disabled, onClick, field.source, selected, onSelectionChange],
     );
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: onSelectionChange is intentionally excluded to prevent infinite loops
-    React.useEffect(() => {
-      onSelectionChange?.(selected);
-    }, [selected]);
 
     return (
       <tr {...props} onClick={handleRowClick}>
@@ -71,37 +71,54 @@ export interface FieldTableProps extends React.HTMLAttributes<HTMLTableElement> 
   onSelectionChange?: (fields: string[]) => void;
 }
 
-export const FieldTable = ({ fields, disabled = false, onSelectionChange, ...props }: FieldTableProps) => {
-  const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
+export interface FieldTableHandler {
+  getSelectedFields: () => string[];
+  clearSelection: () => void;
+}
 
-  const handleFieldSelectionChange = React.useCallback((field: string, selected: boolean) => {
-    setSelectedFields((prev) => {
-      return selected ? [...prev, field] : prev.filter((f) => f !== field);
-    });
-  }, []);
+export const FieldTable = React.forwardRef<FieldTableHandler, FieldTableProps>(
+  ({ fields, disabled = false, onSelectionChange, ...props }, ref) => {
+    const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: onSelectionChange is intentionally excluded to prevent infinite loops
-  React.useEffect(() => {
-    onSelectionChange?.(selectedFields);
-  }, [selectedFields]);
+    React.useImperativeHandle(
+      ref,
+      () => ({
+        getSelectedFields: () => selectedFields,
+        clearSelection: () => setSelectedFields([]),
+      }),
+      [selectedFields],
+    );
 
-  return (
-    <table {...props}>
-      <tbody>
-        {Object.entries(fields).map(([name, field]) => (
-          <FieldTableRow
-            key={name}
-            name={name}
-            field={field}
-            disabled={disabled}
-            onSelectionChange={(selected) => handleFieldSelectionChange(name, selected)}
-            className="h-8 m-auto"
-          />
-        ))}
-      </tbody>
-    </table>
-  );
-};
+    const handleFieldSelectionChange = React.useCallback((field: string, selected: boolean) => {
+      setSelectedFields((prev) => {
+        return selected ? [...prev, field] : prev.filter((f) => f !== field);
+      });
+    }, []);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: onSelectionChange is intentionally excluded to prevent infinite loops
+    React.useEffect(() => {
+      onSelectionChange?.(selectedFields);
+    }, [selectedFields]);
+
+    return (
+      <table {...props}>
+        <tbody>
+          {Object.entries(fields).map(([name, field]) => (
+            <FieldTableRow
+              key={name}
+              name={name}
+              field={field}
+              selected={selectedFields.includes(name)}
+              disabled={disabled}
+              onSelectionChange={(selected) => handleFieldSelectionChange(name, selected)}
+              className="h-8 m-auto"
+            />
+          ))}
+        </tbody>
+      </table>
+    );
+  },
+);
 
 export interface FieldsProps extends React.HTMLAttributes<HTMLDivElement> {
   fields: Record<string, ElasticsearchField>;
@@ -111,6 +128,8 @@ export interface FieldsProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }: FieldsProps) => {
   const [query, setQuery] = React.useState("");
+  const [selectedFieldCount, setSelectedFieldCount] = React.useState(0);
+  const tableRef = React.useRef<FieldTableHandler>(null);
   const filteredFields = React.useMemo(() => {
     if (query.trim() === "") {
       return fields;
@@ -124,6 +143,13 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
     }
     return result;
   }, [fields, query]);
+  const handleSelectionChange = React.useCallback(
+    (selectedFields: string[]) => {
+      setSelectedFieldCount(selectedFields.length);
+      onSelectionChange?.(selectedFields);
+    },
+    [onSelectionChange],
+  );
   return (
     <div {...props}>
       <div className="w-full h-full flex flex-col">
@@ -143,19 +169,34 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
               <InputGroupButton
                 onClick={() => setQuery("")}
                 disabled={query.trim() === ""}
-                className="hover:bg-white/20 mr-2"
+                className="hover:bg-white/20 "
               >
                 <X />
               </InputGroupButton>
+            )}
+            {selectedFieldCount > 0 && (
+              <>
+                <InputGroupText className="bg-gray-400/10 rounded-md px-3 py-1.5 text-xs mr-1">
+                  {selectedFieldCount}
+                </InputGroupText>
+                <InputGroupButton
+                  onClick={() => tableRef.current?.clearSelection()}
+                  disabled={disabled}
+                  className="hover:bg-gray-300/40 mr-1 text-gray-600"
+                >
+                  <BrushCleaning />
+                </InputGroupButton>
+              </>
             )}
           </InputGroup>
         </div>
         <div className="flex-1 w-full overflow-auto">
           <FieldTable
+            ref={tableRef}
             fields={filteredFields}
             disabled={disabled}
-            onSelectionChange={onSelectionChange}
-            className="w-full"
+            onSelectionChange={handleSelectionChange}
+            className="w-full text-gray-700"
           />
         </div>
       </div>
