@@ -1,12 +1,9 @@
 import { clsx } from "clsx";
-import { useAtom } from "jotai";
 import { Plus, X } from "lucide-react";
 import React from "react";
-import { activeTabIdAtom, tabsAtom } from "@/atoms/tabs";
 import { Playground } from "@/components/Playground";
-import { uuid4 } from "@/lib/uuid";
+import { useTabs } from "@/hooks/useTabs";
 import type { PlaygroundState } from "@/types/playground";
-import type { Tab } from "@/types/tab";
 import { OperationIcon } from "./Operations";
 
 const scrollToTab = (tabId: string) => {
@@ -16,63 +13,43 @@ const scrollToTab = (tabId: string) => {
   }
 };
 
-const getTabTitle = (tab: Tab): string => {
-  if (tab.title) {
-    return tab.title;
-  }
-  if (tab.type === "playground") {
-    if (tab.state.operation) {
-      switch (tab.state.operation.type) {
-        case "search":
-          return `${tab.state.clusterName ?? "No cluster"} / ${tab.state.operation.indexName ?? "No index"}`.trim();
-        default:
-          return "Playground";
-      }
-    }
-  }
-  return "New Tab";
-};
-
 export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export type TabsHandler = Record<string, never>;
 
 export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref) => {
-  const [tabs, setTabs] = useAtom(tabsAtom);
-  const [activeTabId, setActiveTabId] = useAtom(activeTabIdAtom);
+  const tabs = useTabs();
 
   React.useImperativeHandle(ref, () => ({}), []);
 
   React.useEffect(() => {
-    if (activeTabId) {
-      scrollToTab(activeTabId);
+    if (tabs.activeTabId) {
+      scrollToTab(tabs.activeTabId);
     }
-  }, [activeTabId]);
+  }, [tabs.activeTabId]);
 
-  const handleSelectTab = (tabId: string) => {
-    setActiveTabId(tabId);
-  };
+  const handleSelectTab = React.useCallback(
+    (tabId: string) => {
+      tabs.activate(tabId);
+    },
+    [tabs],
+  );
 
-  const handleAddTab = () => {
-    setTabs((prevTabs) => {
-      const newTab: Tab = { id: uuid4(), type: "playground", state: {} };
-      setActiveTabId(newTab.id);
-      return [...prevTabs, newTab];
-    });
-  };
+  const handleAddTab = React.useCallback(() => {
+    const newTab = tabs.newPlaygroundTab();
+    tabs.add(newTab);
+    tabs.activate(newTab.id);
+  }, [tabs]);
 
-  const handleCloseTab = (tabId: string) => {
-    setTabs((prevTabs) => prevTabs.filter((tab) => tab.id !== tabId));
-    if (activeTabId === tabId) {
-      const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
-      const newActiveTab = tabs[tabIndex - 1] || tabs[tabIndex + 1];
-      setActiveTabId(newActiveTab ? newActiveTab.id : null);
-    }
-  };
+  const handleCloseTab = React.useCallback(
+    (tabId: string) => {
+      tabs.close(tabId);
+    },
+    [tabs],
+  );
 
   const handleUpdatePlaygroundTabState = (tabId: string, newState: PlaygroundState) => {
-    console.log("Updating tab state for tabId:", tabId, "with newState:", newState);
-    setTabs((prevTabs) => prevTabs.map((tab) => (tab.id === tabId ? { ...tab, state: newState } : tab)));
+    tabs.update(tabId, { state: newState });
   };
 
   return (
@@ -80,13 +57,13 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
       <div className="flex flex-col gap-2 w-full h-full">
         <div className="flex gap-2 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
           <div className="flex gap-2 h-full w-fit overflow-x-auto p-0 scrollbar-none">
-            {tabs.map((tab) => (
+            {tabs.tabs.map((tab) => (
               <div
                 key={tab.id}
                 data-tab-id={tab.id}
                 className={clsx(
                   "flex gap-0 items-center h-full text-sm rounded-lg p-0 hover:bg-white/30 transition-colors select-none",
-                  activeTabId === tab.id ? "bg-white/60 hover:bg-white/45" : "bg-white/15",
+                  tabs.activeTabId === tab.id ? "bg-white/60 hover:bg-white/45" : "bg-white/15",
                 )}
               >
                 <button
@@ -98,7 +75,7 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
                   {tab.state.operation?.type && (
                     <OperationIcon operation={tab.state.operation.type} className="inline-block ml-1 mr-2 h-4 w-4" />
                   )}
-                  {getTabTitle(tab)}
+                  {tabs.title(tab)}
                 </button>
                 <button type="button" onClick={() => handleCloseTab(tab.id)} className="py-2 pl-1 pr-2">
                   <X className="h-4 w-4" />
@@ -115,12 +92,12 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
           </button>
         </div>
         <div className="flex-1 min-h-0 w-full h-full bg-white/40 rounded-xl p-2">
-          {tabs.map((tab) => (
+          {tabs.tabs.map((tab) => (
             <Playground
               key={tab.id}
               initialState={tab.state}
               className="w-full h-full min-h-0"
-              hidden={activeTabId !== tab.id}
+              hidden={tabs.activeTabId !== tab.id}
               onStateChange={(newState) => handleUpdatePlaygroundTabState(tab.id, newState)}
             />
           ))}

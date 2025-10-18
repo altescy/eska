@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import "@fontsource-variable/fira-code";
+import { Collections } from "@/components/Collections";
 import { Tabs } from "@/components/Tabs";
 
 function App() {
@@ -60,12 +61,13 @@ function App() {
           <Panel
             ref={collectionPanelRef}
             defaultSize={20}
-            className="max-w-[300px] w-full"
+            className="max-w-[300px] w-full flex flex-col"
             collapsible
             collapsedSize={0}
             onCollapse={() => setOpenCollections(false)}
           >
             <div className="h-1 app-region-drag" />
+            <Collections className="w-full h-full flex-1 min-h-0" />
           </Panel>
           <PanelResizeHandle />
           <Panel className="flex flex-col pt-0 px-2 pb-2 w-full h-full min-h-0">

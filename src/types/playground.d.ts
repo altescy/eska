@@ -1,19 +1,9 @@
-import { ElasticsearchOperation } from "./elasticsearchOperation";
+import { ElasticsearchOperationState } from "./elasticsearchOperation";
+import { ElasticsearchCollection } from "./collection";
 
-export interface BaseOperationState<Operation extends ElasticsearchOperation> {
-  type: Operation;
-}
-
-export interface SearchOperationState extends BaseOperationState<"search"> {
-  indexName?: string;
-  query?: string;
-  response?: string;
-}
-
-type OperationState = SearchOperationState;
-
-export interface PlaygroundState<T extends OperationState = OperationState> {
+export interface PlaygroundState<T extends OperationState = ElasticsearchOperationState> {
   clusterId?: string;
   clusterName?: string;
   operation?: T;
+  collection?: ElasticsearchCollection;
 }

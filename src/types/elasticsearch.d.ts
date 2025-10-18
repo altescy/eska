@@ -1,5 +1,3 @@
-export type ElasticsearchOperation = "search";
-
 export interface ElasticsearchField {
   type: string;
   index?: boolean;
@@ -77,3 +75,20 @@ export interface ElaseticsearchSearchResponse<T = JSONValue> {
 export interface ElasticsearchGetIndicesResponse {
   [index: string]: ElasticsearchIndex;
 }
+
+export type ElasticsearchOperation = "search";
+
+export interface BaseElasticsearchOperationState<Operation extends ElasticsearchOperation> {
+  type: Operation;
+}
+
+export interface ElasticsearchSearchOperationState extends BaseOperationState<"search"> {
+  type: "search";
+  clusterId?: string;
+  clusterName?: string;
+  indexName?: string;
+  query?: string;
+  response?: string;
+}
+
+export type ElasticsearchOperationState = ElasticsearchSearchOperationState;

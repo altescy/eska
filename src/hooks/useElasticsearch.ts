@@ -1,4 +1,6 @@
+import { useAtom } from "jotai";
 import React from "react";
+import { cachedIndicesAtom } from "@/atoms/elasticsearch";
 import { quote } from "@/lib/elasticsearch";
 import type { Cluster } from "@/types/cluster";
 import type {
@@ -10,6 +12,7 @@ import type {
 
 export const useElasticsearch = () => {
   const [isLoading, setIsLoading] = React.useState(false);
+  const [cachedIndices, setCachedIndices] = useAtom(cachedIndicesAtom);
 
   const getHeaders = React.useCallback((cluster: Cluster): Record<string, string> => {
     if (!cluster) return {};
@@ -73,9 +76,17 @@ export const useElasticsearch = () => {
   );
 
   const getIndices = React.useCallback(
-    async (cluster: Cluster, index: string = "*"): Promise<ElasticsearchGetIndicesResponse> =>
-      await request(cluster, "GET", `${quote(index)}`),
-    [request],
+    async (cluster: Cluster, index: string = "*"): Promise<ElasticsearchGetIndicesResponse> => {
+      const cacheKey = `${cluster.id}::${index}`;
+      if (cachedIndices[cacheKey]) {
+        return cachedIndices[cacheKey];
+      } else {
+        const response = await request<ElasticsearchGetIndicesResponse>(cluster, "GET", `${quote(index)}`);
+        setCachedIndices((prev) => ({ ...prev, [cacheKey]: response }));
+        return response;
+      }
+    },
+    [request, cachedIndices, setCachedIndices],
   );
 
   return { ping, health, search, getIndices, isLoading };

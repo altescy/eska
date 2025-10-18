@@ -1,7 +1,8 @@
-import { Check, Clipboard, Play, Sparkles } from "lucide-react";
+import { Check, Clipboard, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { SaveCollectionDialog } from "@/components/Collections";
 import { Editor } from "@/components/Editor";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -17,9 +18,12 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useClusters } from "@/hooks/useClusters";
+import { useCollections } from "@/hooks/useCollections";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
+import { uuid4 } from "@/lib/uuid";
 import type { Cluster } from "@/types/cluster";
+import type { Collection } from "@/types/collection";
 import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
 
@@ -50,6 +54,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const clipboardForQuery = useClipboard();
 
     const elasticsearch = useElasticsearch();
+    const collections = useCollections();
 
     React.useImperativeHandle(
       ref,
@@ -72,7 +77,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     React.useEffect(() => {
       // Only trigger onStateChange after initialization is complete
       if (!isInitialized) return;
-
       onStateChange?.({
         clusterId: cluster?.id,
         clusterName: cluster?.name,
@@ -82,8 +86,9 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           query,
           response,
         },
+        collection: initialState?.collection,
       });
-    }, [isInitialized, cluster, selectedIndexName, query, response]);
+    }, [isInitialized, cluster, selectedIndexName, query, response, initialState?.collection]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: initialState properties are intentionally excluded as this should only run once on mount when clusters load
     React.useEffect(() => {
@@ -169,6 +174,23 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       [handleSearch],
     );
 
+    const collection = React.useMemo(() => {
+      const collection: Collection = {
+        id: initialState?.collection?.id ?? uuid4(),
+        type: "elasticsearch",
+        name: initialState?.collection?.name ?? `${cluster?.name ?? "No cluster"} / ${selectedIndexName ?? "No index"}`,
+        content: {
+          type: "search",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          query,
+          response,
+        },
+      };
+      return collection;
+    }, [cluster, selectedIndexName, query, response, initialState?.collection]);
+
     return (
       <div {...props}>
         <div className="flex flex-col gap-1 h-full w-full">
@@ -216,6 +238,11 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               onSelectItem={(selected) => setSelectedIndexName(selected?.key)}
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
+            <SaveCollectionDialog collection={collection}>
+              <Button variant="ghost" size="icon" disabled={collections.isSaved}>
+                {collections.isSaved ? <Check /> : <Save />}
+              </Button>
+            </SaveCollectionDialog>
           </div>
           <PanelGroup direction="horizontal" className="w-full h-full flex-1 min-h-0">
             <Panel className="w-full h-full bg-white/40 p-3 rounded-lg shadow-lg">
