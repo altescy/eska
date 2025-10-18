@@ -26,5 +26,10 @@ dist-electron
 
 release/
 
+# Test coverage
+coverage/
+test-results/
+*.lcov
+
 # Claude Code
 .claude/
