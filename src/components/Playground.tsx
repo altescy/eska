@@ -299,14 +299,9 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
             <SaveCollectionDialog collection={collection} open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
-                    {collections.isSaved ? <Check /> : <Save />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{collections.isSaved ? "Saved" : "Save collection"}</TooltipContent>
-              </Tooltip>
+              <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
+                {collections.isSaved ? <Check /> : <Save />}
+              </Button>
             </SaveCollectionDialog>
           </div>
           <PanelGroup direction="horizontal" className="w-full h-full flex-1 min-h-0">
