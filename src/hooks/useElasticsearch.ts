@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
 import React from "react";
 import { cachedIndicesAtom } from "@/atoms/elasticsearch";
-import { quote } from "@/lib/elasticsearch";
+import { buildElasticsearchHeaders, buildIndexCacheKey, buildUrlWithParams, quote } from "@/lib/elasticsearch";
 import type { Cluster } from "@/types/cluster";
 import type {
   ElaseticsearchSearchResponse,
@@ -55,14 +55,7 @@ export const useElasticsearch = () => {
   }, []);
 
   const getHeaders = React.useCallback((cluster: Cluster): Record<string, string> => {
-    if (!cluster) return {};
-    if (cluster.auth?.type === "basic") {
-      return {
-        "Content-Type": "application/json",
-        Authorization: `Basic ${btoa(`${cluster.auth.username}:${cluster.auth.password}`)}`,
-      };
-    }
-    return { "Content-Type": "application/json" };
+    return buildElasticsearchHeaders(cluster);
   }, []);
 
   const request = React.useCallback(
@@ -78,14 +71,9 @@ export const useElasticsearch = () => {
       try {
         setIsLoading(true);
         const baseUrl = await getClusterUrl(cluster);
-        const url = new URL(path, baseUrl);
-        if (data?.params) {
-          Object.entries(data.params).forEach(([key, value]) => {
-            url.searchParams.append(key, String(value));
-          });
-        }
+        const url = buildUrlWithParams(baseUrl, path, data?.params);
         const headers = getHeaders(cluster);
-        const response = await fetch(url.toString(), {
+        const response = await fetch(url, {
           method,
           headers,
           body: data?.body ? JSON.stringify(data.body) : undefined,
@@ -118,7 +106,7 @@ export const useElasticsearch = () => {
 
   const getIndices = React.useCallback(
     async (cluster: Cluster, index: string = "*"): Promise<ElasticsearchGetIndicesResponse> => {
-      const cacheKey = `${cluster.id}::${index}`;
+      const cacheKey = buildIndexCacheKey(cluster.id, index);
       if (cachedIndices[cacheKey]) {
         return cachedIndices[cacheKey];
       } else {
