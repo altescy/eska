@@ -1,4 +1,5 @@
 export type KeyBinding = "default" | "vim";
+export type ClipboardFormat = "json" | "jsonc";
 
 export interface EditorSettings {
   fontSize: number;
@@ -6,4 +7,5 @@ export interface EditorSettings {
   wordWrap: "on" | "off";
   minimap: boolean;
   keyBinding: KeyBinding;
+  clipboardFormat: ClipboardFormat;
 }

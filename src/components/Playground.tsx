@@ -1,9 +1,11 @@
+import { useAtomValue } from "jotai";
 import JSON5 from "json5";
 import { Check, Clipboard, CornerDownRight, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
+import { editorSettingsAtom } from "@/atoms/editor";
 import { SaveCollectionDialog } from "@/components/Collections";
 import { Editor, type EditorHandle } from "@/components/Editor";
 import { Fields } from "@/components/Fields";
@@ -63,6 +65,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
 
     const elasticsearch = useElasticsearch();
     const collections = useCollections();
+    const editorSettings = useAtomValue(editorSettingsAtom);
 
     React.useImperativeHandle(
       ref,
@@ -210,6 +213,12 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const handleFormatQuery = React.useCallback(() => {
       queryEditorRef.current?.format();
     }, []);
+
+    const handleCopyQueryToClipboard = React.useCallback(() => {
+      const textToCopy =
+        editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
+      clipboardForQuery.copyToClipboard(textToCopy);
+    }, [clipboardForQuery, editorSettings.clipboardFormat, query]);
 
     const selectedIndex = React.useMemo(() => {
       if (selectedIndexName && indices) {
@@ -368,7 +377,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => clipboardForQuery.copyToClipboard(query)}>
+                        <Button variant="ghost" size="icon" onClick={handleCopyQueryToClipboard}>
                           {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
                         </Button>
                       </TooltipTrigger>
