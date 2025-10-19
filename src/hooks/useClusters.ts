@@ -20,7 +20,14 @@ export function useClusters() {
       }
 
       const decrypted = await decryptData<Cluster[]>(encryptedClusters);
-      setClustersState(decrypted ?? []);
+      // Migration: add tunnel field to existing clusters if missing
+      const migrated = (decrypted ?? []).map((cluster) => {
+        if (!cluster.tunnel) {
+          return { ...cluster, tunnel: { type: "none" as const } };
+        }
+        return cluster;
+      });
+      setClustersState(migrated);
       setIsLoading(false);
     })();
   }, [encryptedClusters]);
