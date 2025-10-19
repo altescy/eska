@@ -111,14 +111,24 @@ This will generate icons for all platforms:
 
 ```
 eska/
-├── electron/          # Electron main process
-├── src/               # React application source
-│   ├── components/    # React components
-│   ├── lib/           # Utility libraries
-│   ├── types/         # TypeScript type definitions
-│   └── atoms/         # Jotai state atoms
-├── .github/           # GitHub Actions workflows
-└── dist-electron/     # Built Electron files
+├── electron/            # Electron main process
+├── src/                 # React application source
+│   ├── features/        # Feature-based modules
+│   │   ├── Clusters/    # Cluster management
+│   │   ├── Collections/ # Saved query collections
+│   │   ├── Playground/  # Query editor and execution
+│   │   ├── Settings/    # Application settings
+│   │   └── Tabs/        # Tab management
+│   ├── components/      # Shared React components
+│   │   ├── ui/          # Reusable UI components
+│   │   ├── Editor.tsx   # Monaco editor wrapper
+│   │   └── ...
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utility libraries
+│   ├── types/           # TypeScript type definitions
+│   └── atoms/           # Jotai state atoms
+├── .github/             # GitHub Actions workflows
+└── dist-electron/       # Built Electron files
 ```
 
 ## Tech Stack
