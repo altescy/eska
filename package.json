@@ -1,7 +1,7 @@
 {
   "name": "eska",
   "productName": "Eska",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A modern Elasticsearch client built with Electron",
   "author": "altescy",
   "license": "MIT",
