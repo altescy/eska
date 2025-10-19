@@ -2,12 +2,20 @@ import {
   closestCenter,
   DndContext,
   type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { clsx } from "clsx";
 import { Plus, X } from "lucide-react";
@@ -39,7 +47,7 @@ const SortableTabItem = ({ tab, isActive, title, onSelect, onClose }: SortableTa
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -77,6 +85,7 @@ export type TabsHandler = Record<string, never>;
 
 export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref) => {
   const tabs = useTabs();
+  const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -103,6 +112,10 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     tabs.activate(newTab.id);
   }, [tabs]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -114,6 +127,8 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
         tabs.reorder(oldIndex, newIndex);
       }
     }
+
+    setActiveId(null);
   };
 
   React.useEffect(() => {
@@ -165,12 +180,20 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     tabs.update(tabId, { state: newState });
   };
 
+  const activeTab = activeId ? tabs.tabs.find((tab) => tab.id === activeId) : null;
+
   return (
     <div {...props}>
       <div className="flex flex-col gap-1 w-full h-full">
         <div className="flex gap-1 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tabs.tabs.map((tab) => tab.id)}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToHorizontalAxis]}
+          >
+            <SortableContext items={tabs.tabs.map((tab) => tab.id)} strategy={horizontalListSortingStrategy}>
               <div className="flex gap-2 h-9 w-fit overflow-y-hidden overflow-x-auto p-0 scrollbar-none">
                 {tabs.tabs.map((tab) => (
                   <SortableTabItem
@@ -184,6 +207,29 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
                 ))}
               </div>
             </SortableContext>
+            <DragOverlay>
+              {activeTab ? (
+                <div
+                  className={clsx(
+                    "flex gap-0 items-center h-9 text-sm rounded-lg p-0 select-none shadow-lg cursor-grabbing backdrop-blur-lg",
+                    tabs.activeTabId === activeTab.id ? "bg-white/90" : "bg-white/70",
+                  )}
+                >
+                  <div className="max-w-xs truncate py-2 pl-2">
+                    {activeTab.state.operation?.type && (
+                      <OperationIcon
+                        operation={activeTab.state.operation.type}
+                        className="inline-block ml-1 mr-2 h-4 w-4"
+                      />
+                    )}
+                    {tabs.title(activeTab)}
+                  </div>
+                  <div className="py-2 pl-1 pr-2">
+                    <X className="h-4 w-4" />
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
           <button
             type="button"
