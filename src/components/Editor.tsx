@@ -64,6 +64,8 @@ export const Editor = ({ language, value, readOnly, schemas, actions, onChange, 
     if (schemas) {
       monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
         validate: true,
+        allowComments: true,
+        trailingCommas: "ignore",
         schemas: schemas,
       });
     }

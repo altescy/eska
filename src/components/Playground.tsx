@@ -1,3 +1,4 @@
+import JSON5 from "json5";
 import { Check, Clipboard, CornerDownRight, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
@@ -30,9 +31,10 @@ import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
 
 const DEFAULT_QUERY = `{
+  // Default query to match all documents
   "query": {
-    "match_all": {}
-  }
+    "match_all": {},
+  },
 }`;
 
 export interface PlaygroundProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -84,9 +86,9 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         return query;
       }
       try {
-        const parsed = JSON.parse(query);
+        const parsed = JSON5.parse(query);
         parsed._source = [...(parsed._source ?? []), ...selectedFields];
-        return JSON.stringify(parsed, null, 2);
+        return JSON5.stringify(parsed, null, 2);
       } catch {
         return query;
       }
@@ -192,7 +194,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       if (!cluster || !selectedIndexName) return;
       (async () => {
         try {
-          const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(composedQuery));
+          const response = await elasticsearch.search(cluster, selectedIndexName, JSON5.parse(composedQuery));
           setResponse(JSON.stringify(response, null, 2));
         } catch (error) {
           toast("Failed to execute search query.", {
@@ -205,11 +207,11 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
 
     const handleFormatQuery = React.useCallback(() => {
       try {
-        const parsed = JSON.parse(query);
-        const formatted = JSON.stringify(parsed, null, 2);
+        const parsed = JSON5.parse(query);
+        const formatted = JSON5.stringify(parsed, null, 2);
         setQuery(formatted);
       } catch {
-        // Ignore JSON parse errors
+        // Ignore JSON5 parse errors
       }
     }, [query]);
 
