@@ -1,27 +1,9 @@
 import { useAtomValue } from "jotai";
 import JSON5 from "json5";
-import { Check, Clipboard, CornerDownRight, Play, Save, Sparkles } from "lucide-react";
-import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
 import { editorSettingsAtom } from "@/atoms/editor";
-import { SaveCollectionDialog } from "@/components/Collections";
-import { Editor, type EditorHandle } from "@/components/Editor";
-import { Fields } from "@/components/Fields";
-import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useClusters } from "@/hooks/useClusters";
 import { useCollections } from "@/hooks/useCollections";
@@ -31,6 +13,10 @@ import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
 import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
+
+import { PlaygroundToolbar } from "./PlaygroundToolbar";
+import { QueryEditor } from "./QueryEditor";
+import { ResponseViewer } from "./ResponseViewer";
 
 const DEFAULT_QUERY = `{
   // Default query to match all documents
@@ -60,7 +46,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const [selectedIndexName, setSelectedIndexName] = React.useState<string>();
     const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
     const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
-    const queryEditorRef = React.useRef<EditorHandle>(null);
     const clipboardForQuery = useClipboard();
 
     const elasticsearch = useElasticsearch();
@@ -210,10 +195,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [composedQuery, selectedIndexName, elasticsearch.search]);
 
-    const handleFormatQuery = React.useCallback(() => {
-      queryEditorRef.current?.format();
-    }, []);
-
     const handleCopyQueryToClipboard = React.useCallback(() => {
       const textToCopy =
         editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
@@ -249,20 +230,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       return [];
     }, [selectedIndex]);
 
-    const queryActions = React.useMemo(
-      () => [
-        {
-          id: "run-query",
-          label: "Run Query",
-          keybindings: [MonacoAPI.KeyMod.CtrlCmd | MonacoAPI.KeyCode.Enter],
-          run: () => {
-            handleSearch();
-          },
-        },
-      ],
-      [handleSearch],
-    );
-
     const fields = React.useMemo(
       () => (selectedIndex ? extractFields(selectedIndex.mappings) : undefined),
       [selectedIndex],
@@ -271,137 +238,35 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     return (
       <div {...props}>
         <div className="flex flex-col gap-1 h-full w-full">
-          <div className="h-fit w-full shrink-0 flex gap-1">
-            <Combobox
-              initialKey={cluster?.id}
-              items={clusters.map((c) => ({
-                key: c.id,
-                value: c.id,
-                label: c.name,
-                details: <div className="text-xs text-gray-400">{c.auth.host}</div>,
-              }))}
-              placeholder="Select cluster"
-              onSelectItem={(selected) => setCluster(clusters.find((c) => c.id === selected?.key))}
-              className="w-[200px] shrink-0 bg-white/40 rounded-l-lg overflow-hidden"
-            />
-            <Select defaultValue="search">
-              <SelectTrigger className="w-[120px] shrink-0 border-none bg-white/40 rounded-none rounded-r-none">
-                <SelectValue placeholder="Select a fruit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Operation</SelectLabel>
-                  <SelectItem value="search">SEARCH</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            <Combobox
-              initialKey={selectedIndexName}
-              items={[
-                // Create items for indices
-                ...Object.entries(indices ?? {}).map(([name, index]) => ({
-                  key: name,
-                  value: name,
-                  label: name,
-                  details: (
-                    <div className="text-xs text-gray-500">
-                      {Object.keys(index.aliases).length > 0
-                        ? Object.keys(index.aliases).map((alias) => (
-                            <div key={alias} className="ml-2">
-                              {alias}
-                            </div>
-                          ))
-                        : "Index"}
-                    </div>
-                  ),
-                })),
-                // Create items for aliases
-                ...Object.entries(indices ?? {}).flatMap(([indexName, index]) =>
-                  Object.keys(index.aliases).map((alias) => ({
-                    key: alias,
-                    value: alias,
-                    label: alias,
-                    details: (
-                      <div className="text-xs text-gray-500">
-                        <CornerDownRight className="text-gray-400 inline-block -translate-y-0.5" /> {indexName}
-                      </div>
-                    ),
-                  })),
-                ),
-              ]}
-              placeholder={elasticsearch.isLoading ? "Loading indices..." : "Select index or alias"}
-              onSelectItem={(selected) => setSelectedIndexName(selected?.key)}
-              className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
-            />
-            <SaveCollectionDialog collection={collection} open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-              <Button variant="ghost" size="icon" disabled={collections.isSaved} className="text-gray-600">
-                {collections.isSaved ? <Check /> : <Save />}
-              </Button>
-            </SaveCollectionDialog>
-          </div>
+          <PlaygroundToolbar
+            clusters={clusters}
+            selectedCluster={cluster}
+            indices={indices}
+            selectedIndexName={selectedIndexName}
+            collection={collection}
+            saveDialogOpen={saveDialogOpen}
+            isSaved={collections.isSaved}
+            isLoadingIndices={elasticsearch.isLoading}
+            onClusterChange={setCluster}
+            onIndexChange={setSelectedIndexName}
+            onSaveDialogOpenChange={setSaveDialogOpen}
+          />
           <PanelGroup direction="horizontal" className="w-full h-full flex-1 min-h-0">
-            <Panel className="w-full h-full bg-white/40 p-3 rounded-lg shadow-lg">
-              <PanelGroup direction="vertical" className="w-full h-full">
-                <Panel className="w-full h-full flex gap-3 flex-1">
-                  <div className="flex-1 min-w-0">
-                    <Editor
-                      ref={queryEditorRef}
-                      language="json"
-                      schemas={querySchemas}
-                      actions={queryActions}
-                      value={query}
-                      onChange={(value) => setQuery(value ?? "")}
-                    />
-                  </div>
-                  <div className="w-fit h-full shrink-0 flex flex-col gap-2 items-center text-gray-700">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={handleSearch}
-                          disabled={!selectedIndex || elasticsearch.isLoading}
-                        >
-                          {elasticsearch.isLoading ? <Spinner /> : <Play />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Run query</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleFormatQuery}>
-                          <Sparkles />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Format query</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleCopyQueryToClipboard}>
-                          {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{clipboardForQuery.isCopied ? "Copied" : "Copy query"}</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </Panel>
-                {fields && (
-                  <>
-                    <PanelResizeHandle />
-                    <Panel className="w-full h-full">
-                      <Fields
-                        fields={fields}
-                        className="w-full h-full overflow-hidden"
-                        onSelectionChange={setSelectedFields}
-                      />
-                    </Panel>
-                  </>
-                )}
-              </PanelGroup>
-            </Panel>
+            <QueryEditor
+              query={query}
+              querySchemas={querySchemas}
+              fields={fields}
+              isLoading={elasticsearch.isLoading}
+              isRunDisabled={!selectedIndex}
+              isCopied={clipboardForQuery.isCopied}
+              onQueryChange={setQuery}
+              onFieldsSelectionChange={setSelectedFields}
+              onRun={handleSearch}
+              onCopy={handleCopyQueryToClipboard}
+            />
             <PanelResizeHandle />
             <Panel>
-              <Editor language="json" value={response} readOnly lineNumbers="off" />
+              <ResponseViewer response={response} />
             </Panel>
           </PanelGroup>
         </div>

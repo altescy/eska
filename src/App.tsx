@@ -2,8 +2,6 @@ import { clsx } from "clsx";
 import { Folder, Server, Settings as SettingsIcon } from "lucide-react";
 import React from "react";
 import { type ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { Clusters } from "@/components/Clusters";
-import { Settings } from "@/components/Settings";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,10 +12,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Clusters } from "@/features/Clusters";
+import { Settings } from "@/features/Settings";
 import "@fontsource-variable/fira-code";
-import { Collections } from "@/components/Collections";
-import { Tabs } from "@/components/Tabs";
 import { Toaster } from "@/components/ui/sonner";
+import { Collections } from "@/features/Collections";
+import { Tabs } from "@/features/Tabs";
 
 function App() {
   const [openCollections, setOpenCollections] = React.useState(true);

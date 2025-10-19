@@ -20,11 +20,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { clsx } from "clsx";
 import { Plus, X } from "lucide-react";
 import React from "react";
-import { Playground } from "@/components/Playground";
+import { OperationIcon } from "@/components/Operations";
+import { Playground } from "@/features/Playground";
 import { useTabs } from "@/hooks/useTabs";
 import type { PlaygroundState } from "@/types/playground";
 import type { Tab } from "@/types/tab";
-import { OperationIcon } from "./Operations";
 
 const scrollToTab = (tabId: string) => {
   const tabElement = document.querySelector(`[data-tab-id="${tabId}"]`);
