@@ -21,6 +21,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   const [openCollections, setOpenCollections] = React.useState(true);
+  const [openSettings, setOpenSettings] = React.useState(false);
   const collectionPanelRef = React.useRef<ImperativePanelHandle>(null);
 
   React.useEffect(() => {
@@ -30,6 +31,21 @@ function App() {
       collectionPanelRef.current?.collapse();
     }
   }, [openCollections]);
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl/Cmd + , to open settings
+      if ((event.ctrlKey || event.metaKey) && event.key === ",") {
+        event.preventDefault();
+        setOpenSettings(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const toggleCollections = React.useCallback(() => {
     setOpenCollections((prev) => !prev);
@@ -73,7 +89,7 @@ function App() {
               <TooltipContent side="right">Toggle collections</TooltipContent>
             </Tooltip>
             <div className="flex-1" />
-            <Dialog>
+            <Dialog open={openSettings} onOpenChange={setOpenSettings}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <DialogTrigger asChild>
@@ -82,7 +98,7 @@ function App() {
                     </Button>
                   </DialogTrigger>
                 </TooltipTrigger>
-                <TooltipContent side="right">Open settings</TooltipContent>
+                <TooltipContent side="right">Open settings (⌘,)</TooltipContent>
               </Tooltip>
               <DialogContent className="sm:max-w-[600px] bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
                 <DialogHeader>
