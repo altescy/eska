@@ -2,7 +2,7 @@ import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { clustersAtom } from "@/atoms/clusters";
 import { migrateClusters } from "@/lib/cluster";
-import { decryptData, encryptData } from "@/lib/secureStorage";
+import { decryptData, encryptData } from "@/lib/storage";
 import type { Cluster } from "@/types/cluster";
 
 export function useClusters() {
