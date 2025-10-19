@@ -7,6 +7,8 @@
 
 A modern Elasticsearch client built with Electron, React, and TypeScript.
 
+<img width="1342" height="931" alt="image" src="https://github.com/user-attachments/assets/3b72d369-93bb-448a-8f5f-2d0c5df91b89" />
+
 > [!Warning]
 > This application is currently in early development stage. Features and functionality may change significantly, and some features may be incomplete or experimental.
 
