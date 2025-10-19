@@ -47,75 +47,91 @@ export interface EditorProps {
   lineNumbers?: "on" | "off" | "relative" | "interval";
 }
 
-export const Editor = ({ language, value, readOnly, schemas, actions, onChange, lineNumbers }: EditorProps) => {
-  const [editor, setEditor] = React.useState<MonacoAPI.editor.IStandaloneCodeEditor | null>(null);
-  const [monaco, setMonaco] = React.useState<Monaco | null>(null);
-  const [editorSettings] = useAtom(editorSettingsAtom);
+export interface EditorHandle {
+  format: () => void;
+}
 
-  const handleEditorWillMount = React.useCallback((monacoInstance: Monaco) => {
-    setMonaco(monacoInstance);
-  }, []);
+export const Editor = React.forwardRef<EditorHandle, EditorProps>(
+  ({ language, value, readOnly, schemas, actions, onChange, lineNumbers }, ref) => {
+    const [editor, setEditor] = React.useState<MonacoAPI.editor.IStandaloneCodeEditor | null>(null);
+    const [monaco, setMonaco] = React.useState<Monaco | null>(null);
+    const [editorSettings] = useAtom(editorSettingsAtom);
 
-  const handlEditorDidMount = React.useCallback((editorInstance: MonacoAPI.editor.IStandaloneCodeEditor) => {
-    setEditor(editorInstance);
-  }, []);
+    const handleEditorWillMount = React.useCallback((monacoInstance: Monaco) => {
+      setMonaco(monacoInstance);
+    }, []);
 
-  React.useEffect(() => {
-    if (schemas) {
-      monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
-        validate: true,
-        allowComments: true,
-        trailingCommas: "ignore",
-        schemas: schemas,
+    const handlEditorDidMount = React.useCallback((editorInstance: MonacoAPI.editor.IStandaloneCodeEditor) => {
+      setEditor(editorInstance);
+    }, []);
+
+    React.useImperativeHandle(
+      ref,
+      () => ({
+        format: () => {
+          editor?.getAction("editor.action.formatDocument")?.run();
+        },
+      }),
+      [editor],
+    );
+
+    React.useEffect(() => {
+      if (schemas) {
+        monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
+          validate: true,
+          allowComments: true,
+          trailingCommas: "ignore",
+          schemas: schemas,
+        });
+      }
+    }, [monaco, schemas]);
+
+    React.useEffect(() => {
+      if (editor && actions) {
+        actions.forEach((action) => {
+          editor.addAction(action);
+        });
+      }
+    }, [editor, actions]);
+
+    React.useEffect(() => {
+      monaco?.editor.defineTheme("eska", {
+        base: "vs",
+        inherit: true,
+        rules: [],
+        colors: {
+          "editor.background": "#00000000",
+        },
       });
-    }
-  }, [monaco, schemas]);
+      monaco?.editor.setTheme("eska");
+    }, [monaco]);
 
-  React.useEffect(() => {
-    if (editor && actions) {
-      actions.forEach((action) => {
-        editor.addAction(action);
-      });
-    }
-  }, [editor, actions]);
+    React.useEffect(() => {
+      if (!editor) return;
 
-  React.useEffect(() => {
-    monaco?.editor.defineTheme("eska", {
-      base: "vs",
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": "#00000000",
-      },
-    });
-    monaco?.editor.setTheme("eska");
-  }, [monaco]);
+      let vimMode: { dispose: () => void } | null = null;
 
-  React.useEffect(() => {
-    if (!editor) return;
+      if (editorSettings.keyBinding === "vim") {
+        vimMode = initVimMode(editor, document.getElementById("vim-status-bar") || undefined);
+      }
 
-    let vimMode: { dispose: () => void } | null = null;
+      return () => {
+        vimMode?.dispose();
+      };
+    }, [editor, editorSettings.keyBinding]);
 
-    if (editorSettings.keyBinding === "vim") {
-      vimMode = initVimMode(editor, document.getElementById("vim-status-bar") || undefined);
-    }
-
-    return () => {
-      vimMode?.dispose();
-    };
-  }, [editor, editorSettings.keyBinding]);
-
-  return (
-    <MonacoEditor
-      theme="eska"
-      width="100%"
-      height="100%"
-      value={value}
-      defaultLanguage={language}
-      beforeMount={handleEditorWillMount}
-      onMount={handlEditorDidMount}
-      options={{ ...getEditorOptions(editorSettings), readOnly, lineNumbers }}
-      onChange={onChange}
-    />
-  );
-};
+    return (
+      <MonacoEditor
+        theme="eska"
+        width="100%"
+        height="100%"
+        value={value}
+        defaultLanguage={language}
+        beforeMount={handleEditorWillMount}
+        onMount={handlEditorDidMount}
+        options={{ ...getEditorOptions(editorSettings), readOnly, lineNumbers }}
+        onChange={onChange}
+      />
+    );
+  },
+);
