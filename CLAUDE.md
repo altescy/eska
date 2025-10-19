@@ -209,3 +209,34 @@ To regenerate app icons from a source image:
 ./scripts/generate-icons.sh <source-image>
 ```
 Generates icons for all platforms (macOS, Windows, Linux, web) at various sizes.
+
+## Debugging
+
+### Port Forward Debugging
+
+Port forwarding functionality uses kubectl/ssh commands and can fail if system PATH is not configured correctly. To enable detailed debug logging for port forwarding:
+
+**macOS/Linux:**
+```bash
+DEBUG_PORT_FORWARD=1 pnpm dev
+```
+
+**Production App:**
+Set the environment variable before launching:
+```bash
+DEBUG_PORT_FORWARD=1 ./path/to/Eska.app/Contents/MacOS/Eska
+```
+
+Debug logs will show:
+- Command resolution paths (where kubectl/ssh were found)
+- Enhanced PATH environment variable
+- Process stdout/stderr output
+- Connection status changes
+
+**Common Issues:**
+1. **`executable envchain not found`** - kubectl credential plugin not in PATH
+   - Solution: Ensure `/opt/homebrew/bin` (or appropriate path) is in your system PATH
+2. **`spawn kubectl ENOENT`** - kubectl command not found
+   - Solution: Install kubectl or add its installation directory to PATH
+3. **Exit code 127** - Command not found at runtime
+   - Enable debug logging to see which command failed and check PATH

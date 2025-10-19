@@ -1,6 +1,75 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess, execSync } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { existsSync } from "node:fs";
 import net from "node:net";
+
+// Enable debug logging with environment variable: DEBUG_PORT_FORWARD=1
+const DEBUG = process.env.DEBUG_PORT_FORWARD === "1";
+
+function debugLog(...args: unknown[]) {
+  if (DEBUG) {
+    console.log("[PortForward]", ...args);
+  }
+}
+
+/**
+ * Find the absolute path of a command
+ */
+function findCommand(command: string): string {
+  try {
+    // Try to find the command using 'which' on Unix or 'where' on Windows
+    const whichCommand = process.platform === "win32" ? "where" : "which";
+    const result = execSync(`${whichCommand} ${command}`, {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      env: process.env, // Pass environment variables
+    });
+    const path = result.trim().split("\n")[0]; // Get first match
+    debugLog(`Found ${command} at: ${path}`);
+    return path;
+  } catch (error) {
+    console.warn(`[PortForward] Failed to find ${command}, trying fallback paths...`);
+    debugLog(`PATH is: ${process.env.PATH}`);
+
+    // Try common installation paths for kubectl
+    if (command === "kubectl") {
+      const commonPaths = [
+        "/usr/local/bin/kubectl",
+        "/opt/homebrew/bin/kubectl",
+        "/usr/bin/kubectl",
+        `${process.env.HOME}/.rd/bin/kubectl`,
+        `${process.env.HOME}/.local/bin/kubectl`,
+      ];
+
+      for (const path of commonPaths) {
+        if (existsSync(path)) {
+          debugLog(`Found ${command} at fallback path: ${path}`);
+          return path;
+        }
+      }
+    }
+
+    // Try common installation paths for ssh
+    if (command === "ssh") {
+      const commonPaths = [
+        "/usr/bin/ssh",
+        "/usr/local/bin/ssh",
+        "/opt/homebrew/bin/ssh",
+      ];
+
+      for (const path of commonPaths) {
+        if (existsSync(path)) {
+          debugLog(`Found ${command} at fallback path: ${path}`);
+          return path;
+        }
+      }
+    }
+
+    // Fallback to command name (will use PATH at runtime)
+    console.warn(`[PortForward] Using fallback command name: ${command}`);
+    return command;
+  }
+}
 
 interface KubectlTunnelConfig {
   type: "kubectl";
@@ -106,6 +175,9 @@ export class PortForwardManager extends EventEmitter {
     clusterId: string,
     config: KubectlTunnelConfig & { localPort: number },
   ): Promise<number> {
+    const kubectlPath = findCommand("kubectl");
+    debugLog(`Using kubectl at: ${kubectlPath}`);
+
     const args = [
       "port-forward",
       "--address=localhost",
@@ -117,14 +189,41 @@ export class PortForwardManager extends EventEmitter {
       config.namespace,
     ];
 
-    const proc = spawn("kubectl", args, {
+    // Ensure PATH includes common binary locations
+    const pathSeparator = process.platform === "win32" ? ";" : ":";
+    const commonPaths =
+      process.platform === "win32"
+        ? [process.env.PATH, "C:\\Program Files\\kubectl", "C:\\kubectl"].filter(Boolean)
+        : [
+          process.env.PATH,
+          "/usr/local/bin",
+          "/opt/homebrew/bin",
+          "/usr/bin",
+          "/bin",
+          `${process.env.HOME}/.local/bin`,
+          `${process.env.HOME}/.rd/bin`,
+          `${process.env.HOME}/bin`,
+        ].filter(Boolean);
+
+    const enhancedPath = commonPaths.join(pathSeparator);
+
+    debugLog(`Enhanced PATH: ${enhancedPath}`);
+
+    const proc = spawn(kubectlPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        PATH: enhancedPath, // Use enhanced PATH for credential plugins
+      },
     });
 
     return this.handleProcess(clusterId, proc, config);
   }
 
   private async startSSH(clusterId: string, config: SSHTunnelConfig & { localPort: number }): Promise<number> {
+    const sshPath = findCommand("ssh");
+    debugLog(`Using ssh at: ${sshPath}`);
+
     const args = [
       "-N", // No remote command
       "-L",
@@ -151,8 +250,9 @@ export class PortForwardManager extends EventEmitter {
 
     args.push(`${config.username}@${config.host}`);
 
-    const proc = spawn("ssh", args, {
+    const proc = spawn(sshPath, args, {
       stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env }, // Explicitly pass environment variables
     });
 
     return this.handleProcess(clusterId, proc, config);
@@ -176,7 +276,7 @@ export class PortForwardManager extends EventEmitter {
 
       proc.stdout?.on("data", (data: Buffer) => {
         const output = data.toString();
-        console.log(`[${clusterId}] stdout:`, output);
+        debugLog(`[${clusterId}] stdout:`, output);
 
         // kubectl: detect "Forwarding from" message
         if (!connected && config.type === "kubectl" && output.includes("Forwarding from")) {
@@ -203,7 +303,7 @@ export class PortForwardManager extends EventEmitter {
 
       proc.stderr?.on("data", (data: Buffer) => {
         const output = data.toString();
-        console.error(`[${clusterId}] stderr:`, output);
+        debugLog(`[${clusterId}] stderr:`, output);
 
         // SSH typically outputs to stderr, check if connection is established
         if (!connected && config.type === "ssh") {
@@ -244,7 +344,7 @@ export class PortForwardManager extends EventEmitter {
 
       proc.on("error", (error) => {
         clearTimeout(timeout);
-        console.error(`[${clusterId}] Process error:`, error);
+        console.error(`[PortForward] Process error for ${clusterId}:`, error);
 
         if (!connected) {
           reject(error);
@@ -255,7 +355,7 @@ export class PortForwardManager extends EventEmitter {
 
       proc.on("exit", (code, signal) => {
         clearTimeout(timeout);
-        console.log(`[${clusterId}] Process exited with code ${code}, signal ${signal}`);
+        debugLog(`[${clusterId}] Process exited with code ${code}, signal ${signal}`);
 
         if (!connected) {
           reject(new Error(`Process exited with code ${code}`));

@@ -53,6 +53,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "fix-path": "^5.0.0",
     "jotai": "^2.13.1",
     "json5": "^2.2.3",
     "lucide-react": "^0.542.0",
