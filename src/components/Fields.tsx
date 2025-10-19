@@ -175,28 +175,23 @@ export interface FieldTableHandler {
 }
 
 export const FieldTable = React.forwardRef<FieldTableHandler, FieldTableProps>(
-  ({ fields, selectedFields: externalSelectedFields, disabled = false, onSelectionChange, ...props }, ref) => {
-    const [selectedFields, setSelectedFields] = React.useState<string[]>(externalSelectedFields ?? []);
-
+  ({ fields, selectedFields = [], disabled = false, onSelectionChange, ...props }, ref) => {
     React.useImperativeHandle(
       ref,
       () => ({
         getSelectedFields: () => selectedFields,
-        clearSelection: () => setSelectedFields([]),
+        clearSelection: () => onSelectionChange?.([]),
       }),
-      [selectedFields],
+      [selectedFields, onSelectionChange],
     );
 
-    const handleFieldSelectionChange = React.useCallback((field: string, selected: boolean) => {
-      setSelectedFields((prev) => {
-        return selected ? [...prev, field] : prev.filter((f) => f !== field);
-      });
-    }, []);
-
-    // biome-ignore lint/correctness/useExhaustiveDependencies: onSelectionChange is intentionally excluded to prevent infinite loops
-    React.useEffect(() => {
-      onSelectionChange?.(selectedFields);
-    }, [selectedFields]);
+    const handleFieldSelectionChange = React.useCallback(
+      (field: string, selected: boolean) => {
+        const newSelectedFields = selected ? [...selectedFields, field] : selectedFields.filter((f) => f !== field);
+        onSelectionChange?.(newSelectedFields);
+      },
+      [selectedFields, onSelectionChange],
+    );
 
     return (
       <table {...props}>
@@ -302,8 +297,12 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
     (selectedFields: string[]) => {
       setSelectedFields(selectedFields);
       onSelectionChange?.(selectedFields);
+      // If all selections are cleared while showSelectedOnly is active, turn it off
+      if (selectedFields.length === 0 && showSelectedOnly) {
+        setShowSelectedOnly(false);
+      }
     },
-    [onSelectionChange],
+    [onSelectionChange, showSelectedOnly],
   );
   return (
     <div {...props}>
