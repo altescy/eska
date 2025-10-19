@@ -13,6 +13,46 @@ import type {
 export const useElasticsearch = () => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [cachedIndices, setCachedIndices] = useAtom(cachedIndicesAtom);
+  const [_portForwardPorts, setPortForwardPorts] = React.useState<Record<string, number>>({});
+
+  // Setup port forward status listener
+  React.useEffect(() => {
+    const unsubscribe = window.portForward.onStatusChange((status) => {
+      if (status.state === "connected" && status.localPort) {
+        const port = status.localPort;
+        setPortForwardPorts((prev) => ({ ...prev, [status.clusterId]: port }));
+      } else if (status.state === "disconnected" || status.state === "error") {
+        setPortForwardPorts((prev) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [status.clusterId]: _, ...rest } = prev;
+          return rest;
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  const getClusterUrl = React.useCallback(async (cluster: Cluster): Promise<string> => {
+    if (!cluster.tunnel || cluster.tunnel.type === "none") {
+      return cluster.auth.host;
+    }
+
+    // Check if port forward is already connected
+    const existingStatus = await window.portForward.getStatus(cluster.id);
+    if (existingStatus?.state === "connected" && existingStatus.localPort) {
+      return `http://localhost:${existingStatus.localPort}`;
+    }
+
+    // Start port forward
+    const localPort = await window.portForward.start(cluster.id, cluster.tunnel);
+    if (localPort) {
+      return `http://localhost:${localPort}`;
+    }
+
+    // Fallback to auth.host (shouldn't happen but just in case)
+    return cluster.auth.host;
+  }, []);
 
   const getHeaders = React.useCallback((cluster: Cluster): Record<string, string> => {
     if (!cluster) return {};
@@ -37,7 +77,8 @@ export const useElasticsearch = () => {
     ): Promise<Response> => {
       try {
         setIsLoading(true);
-        const url = new URL(path, cluster.auth.host);
+        const baseUrl = await getClusterUrl(cluster);
+        const url = new URL(path, baseUrl);
         if (data?.params) {
           Object.entries(data.params).forEach(([key, value]) => {
             url.searchParams.append(key, String(value));
@@ -54,7 +95,7 @@ export const useElasticsearch = () => {
         setIsLoading(false);
       }
     },
-    [getHeaders],
+    [getHeaders, getClusterUrl],
   );
 
   const ping = React.useCallback(async (cluster: Cluster) => await request(cluster, "GET", "/"), [request]);

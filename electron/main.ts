@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { PortForwardManager } from './portForwardManager.js'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -26,6 +27,7 @@ export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
 let win: BrowserWindow | null
+const portForwardManager = new PortForwardManager()
 
 function createWindow() {
   win = new BrowserWindow({
@@ -87,6 +89,33 @@ ipcMain.handle('safeStorage:encryptString', (_event, plainText: string) => {
 ipcMain.handle('safeStorage:decryptString', (_event, encrypted: string) => {
   const buffer = Buffer.from(encrypted, 'base64')
   return safeStorage.decryptString(buffer)
+})
+
+// Set up port forward status listener
+portForwardManager.on('status', (status) => {
+  win?.webContents.send('port-forward:status', status)
+})
+
+// Port forward IPC handlers
+ipcMain.handle('port-forward:start', async (_event, clusterId: string, config: any) => {
+  return await portForwardManager.start(clusterId, config)
+})
+
+ipcMain.handle('port-forward:stop', async (_event, clusterId: string) => {
+  await portForwardManager.stop(clusterId)
+})
+
+ipcMain.handle('port-forward:status', async (_event, clusterId: string) => {
+  return portForwardManager.getStatus(clusterId)
+})
+
+ipcMain.handle('port-forward:all-statuses', async () => {
+  return portForwardManager.getAllStatuses()
+})
+
+// Stop all port forwards before app quits
+app.on('before-quit', async () => {
+  await portForwardManager.stopAll()
 })
 
 app.whenReady().then(createWindow)
