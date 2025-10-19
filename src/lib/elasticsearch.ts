@@ -447,7 +447,7 @@ export function generateElasticsearchQuerySchema(mapping?: ElasticsearchIndexMap
           exists: {
             type: "object",
             properties: {
-              field: mapping ? { type: "string", enum: Object.keys(extractIndexFields(mapping)) } : { type: "string" },
+              field: mapping ? { type: "string", enum: Object.keys(extractExistsFields(mapping)) } : { type: "string" },
             },
             required: ["field"],
             additionalProperties: false,
@@ -1369,6 +1369,38 @@ export function extractIndexFields(
 ): Record<string, ElasticsearchField> {
   return Object.fromEntries(
     Object.entries(extractFields(mapping, prefix)).filter(([_, config]) => config.index !== false),
+  );
+}
+
+/**
+ * Extract fields that can be used in exists queries
+ * Includes object and nested types (if they have indexed children)
+ * but excludes fields with index: false
+ *
+ * Note: In Elasticsearch, exists query works on:
+ * - All indexed fields (including object/nested if they have indexed children)
+ * - Fields are considered to exist if they have a non-null value
+ */
+export function extractExistsFields(
+  mapping: ElasticsearchIndexMapping | ElasticsearchIndexMapping["properties"],
+  prefix = "",
+): Record<string, ElasticsearchField> {
+  const allFields = extractFields(mapping, prefix);
+
+  return Object.fromEntries(
+    Object.entries(allFields).filter(([fieldPath, config]) => {
+      // For object/nested types, check if they have any indexed children
+      if (config.type === "object" || config.type === "nested") {
+        const hasIndexedChildren = Object.entries(allFields).some(([childPath, childConfig]) => {
+          // Child must start with fieldPath. and have index !== false
+          return childPath.startsWith(`${fieldPath}.`) && childConfig.index === true;
+        });
+        return hasIndexedChildren;
+      }
+
+      // For leaf fields, include only if indexed (index === true)
+      return config.index === true;
+    }),
   );
 }
 
