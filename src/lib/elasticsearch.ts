@@ -1,4 +1,5 @@
 import { minimatch } from "minimatch";
+import type { Cluster } from "@/types/cluster";
 import type { ElasticsearchField, ElasticsearchIndexMapping } from "@/types/elasticsearch.js";
 
 export const quote = (str: string) => encodeURIComponent(str);
@@ -1618,4 +1619,45 @@ export function getFieldTypeColor(fieldType: string): string {
 
   // Default for unknown types
   return "bg-gray-400/60";
+}
+
+/**
+ * Build HTTP headers for Elasticsearch requests based on cluster auth config
+ */
+export function buildElasticsearchHeaders(cluster: Cluster): Record<string, string> {
+  if (!cluster) return {};
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (cluster.auth?.type === "basic") {
+    headers.Authorization = `Basic ${btoa(`${cluster.auth.username}:${cluster.auth.password}`)}`;
+  }
+
+  return headers;
+}
+
+/**
+ * Build URL with query parameters
+ */
+export function buildUrlWithParams(
+  baseUrl: string,
+  path: string,
+  params?: Record<string, string | number | boolean>,
+): string {
+  const url = new URL(path, baseUrl);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.append(key, String(value));
+    }
+  }
+  return url.toString();
+}
+
+/**
+ * Generate cache key for Elasticsearch index queries
+ */
+export function buildIndexCacheKey(clusterId: string, indexName: string): string {
+  return `${clusterId}::${indexName}`;
 }

@@ -33,13 +33,37 @@ This project uses **pnpm** as its package manager. All commands should be run wi
 - `electron/preload.ts` - Preload script that exposes safe IPC and safeStorage APIs to renderer process
 - `src/` - React renderer process
 
-**Key Components:**
-- `src/App.tsx` - Root component with sidebar navigation and resizable panel layout
-- `src/components/Clusters.tsx` - Elasticsearch cluster connection management
-- `src/components/Collections.tsx` - Saved query collections sidebar
-- `src/components/Tabs.tsx` - Tab management for multiple queries
-- `src/components/Playground.tsx` - Main query interface
-- `src/components/Editor.tsx` - Monaco editor with Vim mode support
+**Feature-Based Architecture:**
+
+The application is organized using a feature-based structure where each major feature has its own directory in `src/features/`:
+
+- `src/features/Clusters/` - Cluster management
+  - `Clusters.tsx` - Elasticsearch cluster connection management UI
+
+- `src/features/Collections/` - Saved query collections
+  - `Collections.tsx` - Collections sidebar for saved queries
+
+- `src/features/Playground/` - Query editor and execution
+  - `Playground.tsx` - Main query interface orchestrator
+  - `PlaygroundToolbar.tsx` - Cluster/index selection and save controls
+  - `QueryEditor.tsx` - Query editor with Monaco integration
+  - `QueryActions.tsx` - Run/Format/Copy action buttons
+  - `ResponseViewer.tsx` - Search results display
+  - `Fields.tsx` - Index field browser with filtering
+  - `SaveCollectionDialog.tsx` - Dialog for saving queries
+
+- `src/features/Settings/` - Application settings
+  - `Settings.tsx` - User preferences and configuration
+
+- `src/features/Tabs/` - Tab management
+  - `Tabs.tsx` - Multi-tab interface for queries
+
+**Shared Components:**
+- `src/components/Editor.tsx` - Monaco editor wrapper with Vim mode support
+- `src/components/ui/` - Reusable UI primitives (buttons, dialogs, etc.)
+
+**Root Component:**
+- `src/App.tsx` - Root component with sidebar navigation, keyboard shortcuts, and resizable panel layout
 
 ### State Management
 
@@ -49,7 +73,7 @@ This application uses **Jotai** for state management with atoms stored in `src/a
 - `tabs.ts` - Open query tabs and active tab state
 - `collections.ts` - Saved query collections
 - `elasticsearch.ts` - Elasticsearch client instances and connection state
-- `editor.ts` - Editor preferences (Vim mode, theme, etc.)
+- `editor.ts` - Editor preferences (Vim mode, theme, clipboard format, etc.)
 
 **Important:** Cluster credentials are encrypted using Electron's `safeStorage` API via IPC. The encryption/decryption flow is:
 1. Main process exposes safeStorage IPC handlers (see `electron/main.ts:78-90`)
@@ -87,10 +111,12 @@ The application generates dynamic JSON schemas for Monaco editor autocomplete ba
 ### Monaco Editor Integration
 
 The Monaco editor is configured in `src/components/Editor.tsx`:
-- YAML language support via `monaco-yaml`
-- Optional Vim mode via `monaco-vim`
-- Custom JSON schemas for Elasticsearch query validation
-- Theme customization and editor preferences
+- **JSONC Support:** JSON with Comments (trailing commas and comments allowed)
+- **Optional Vim Mode:** via `monaco-vim` with status bar integration
+- **Custom JSON Schemas:** Dynamic schema generation for Elasticsearch query validation based on index mappings
+- **Theme Customization:** Transparent background with custom "eska" theme
+- **Exposed API:** Uses `forwardRef` to expose `format()` method to parent components
+- **Editor Settings:** Configurable font size, tab size, word wrap, minimap, key bindings, and clipboard format
 
 ### UI Components
 
@@ -150,6 +176,31 @@ Application data is stored in localStorage with versioned keys (format: `eska:v0
 - `secure:*` prefix for encrypted data
 
 When making storage schema changes, consider bumping the version in keys to avoid migration issues.
+
+## Keyboard Shortcuts
+
+- **Ctrl/Cmd + ,** - Open Settings dialog
+- **Ctrl/Cmd + S** - Save current query to collection (when in Playground)
+- **Ctrl/Cmd + Enter** - Execute query (when in Monaco editor)
+
+## Key Features Implementation Notes
+
+### Fields Component (`src/features/Playground/Fields.tsx`)
+
+The Fields component provides a powerful field browser with:
+- **Advanced Filtering:** Supports attribute filters (`@index`, `@source`, `@selected`), type filters (`:text`, `:keyword`), negation (`-@index`, `-:text`), and text search
+- **Selection Toggle:** Click on the selected field count to toggle between showing all fields and selected fields only
+- **Auto-deselect Protection:** Automatically disables "show selected only" filter when all selections are cleared to prevent empty state
+
+### Editor Settings
+
+Configurable in Settings dialog (Ctrl/Cmd + ,):
+- **Font Size:** 10-24px
+- **Tab Size:** 2, 4, or 8 spaces
+- **Word Wrap:** On/Off
+- **Minimap:** Show/Hide
+- **Key Binding:** Default or Vim
+- **Clipboard Format:** JSON (comments removed) or JSONC (comments preserved)
 
 ## Icon Generation
 

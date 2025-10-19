@@ -1,7 +1,8 @@
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { clustersAtom } from "@/atoms/clusters";
-import { decryptData, encryptData } from "@/lib/secureStorage";
+import { migrateClusters } from "@/lib/cluster";
+import { decryptData, encryptData } from "@/lib/storage";
 import type { Cluster } from "@/types/cluster";
 
 export function useClusters() {
@@ -20,13 +21,7 @@ export function useClusters() {
       }
 
       const decrypted = await decryptData<Cluster[]>(encryptedClusters);
-      // Migration: add tunnel field to existing clusters if missing
-      const migrated = (decrypted ?? []).map((cluster) => {
-        if (!cluster.tunnel) {
-          return { ...cluster, tunnel: { type: "none" as const } };
-        }
-        return cluster;
-      });
+      const migrated = migrateClusters(decrypted ?? []);
       setClustersState(migrated);
       setIsLoading(false);
     })();

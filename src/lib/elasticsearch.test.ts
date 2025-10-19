@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { Cluster } from "@/types/cluster";
 import type { ElasticsearchIndexMapping } from "@/types/elasticsearch";
 import {
+  buildElasticsearchHeaders,
+  buildIndexCacheKey,
+  buildUrlWithParams,
   extractDateFields,
   extractFields,
   extractIndexFields,
@@ -516,5 +520,77 @@ describe("Field type constraints in queries", () => {
         expect(fieldProp.enum).not.toContain("title");
       }
     }
+  });
+});
+
+describe("buildElasticsearchHeaders", () => {
+  it("should return default headers for no auth", () => {
+    const cluster: Cluster = {
+      id: "test-id",
+      name: "Test Cluster",
+      auth: { type: "noauth", host: "http://localhost:9200" },
+      tunnel: { type: "none" },
+    };
+
+    const headers = buildElasticsearchHeaders(cluster);
+
+    expect(headers).toEqual({
+      "Content-Type": "application/json",
+    });
+  });
+
+  it("should return headers with Basic auth", () => {
+    const cluster: Cluster = {
+      id: "test-id",
+      name: "Test Cluster",
+      auth: { type: "basic", host: "http://localhost:9200", username: "user", password: "pass" },
+      tunnel: { type: "none" },
+    };
+
+    const headers = buildElasticsearchHeaders(cluster);
+
+    expect(headers).toEqual({
+      "Content-Type": "application/json",
+      Authorization: `Basic ${btoa("user:pass")}`,
+    });
+  });
+});
+
+describe("buildUrlWithParams", () => {
+  it("should build URL without params", () => {
+    const url = buildUrlWithParams("http://localhost:9200", "/_search");
+    expect(url).toBe("http://localhost:9200/_search");
+  });
+
+  it("should build URL with params", () => {
+    const url = buildUrlWithParams("http://localhost:9200", "/_search", {
+      size: 10,
+      from: 0,
+      pretty: true,
+    });
+
+    const parsedUrl = new URL(url);
+    expect(parsedUrl.origin).toBe("http://localhost:9200");
+    expect(parsedUrl.pathname).toBe("/_search");
+    expect(parsedUrl.searchParams.get("size")).toBe("10");
+    expect(parsedUrl.searchParams.get("from")).toBe("0");
+    expect(parsedUrl.searchParams.get("pretty")).toBe("true");
+  });
+
+  it("should handle empty params", () => {
+    const url = buildUrlWithParams("http://localhost:9200", "/_search", {});
+    expect(url).toBe("http://localhost:9200/_search");
+  });
+});
+
+describe("buildIndexCacheKey", () => {
+  it("should generate cache key", () => {
+    const key = buildIndexCacheKey("cluster-123", "my-index");
+    expect(key).toBe("cluster-123::my-index");
+  });
+
+  it("should generate cache key for wildcard", () => {
+    const key = buildIndexCacheKey("cluster-456", "*");
+    expect(key).toBe("cluster-456::*");
   });
 });
