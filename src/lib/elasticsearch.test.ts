@@ -6,6 +6,7 @@ import {
   buildIndexCacheKey,
   buildUrlWithParams,
   extractDateFields,
+  extractExistsFields,
   extractFields,
   extractIndexFields,
   extractKeywordFields,
@@ -592,5 +593,149 @@ describe("buildIndexCacheKey", () => {
   it("should generate cache key for wildcard", () => {
     const key = buildIndexCacheKey("cluster-456", "*");
     expect(key).toBe("cluster-456::*");
+  });
+});
+
+describe("extractExistsFields", () => {
+  it("should include object and nested types with indexed children", () => {
+    const mapping: ElasticsearchIndexMapping = {
+      properties: {
+        user: {
+          type: "object",
+          properties: {
+            name: { type: "text" },
+            age: { type: "integer" },
+          },
+        },
+        metadata: {
+          type: "nested",
+          properties: {
+            key: { type: "keyword" },
+            value: { type: "text" },
+          },
+        },
+        title: { type: "text" },
+      },
+    };
+
+    const fields = extractExistsFields(mapping);
+
+    // Should include object and nested parent fields
+    expect(fields).toHaveProperty("user");
+    expect(fields.user.type).toBe("object");
+    expect(fields).toHaveProperty("metadata");
+    expect(fields.metadata.type).toBe("nested");
+
+    // Should include child fields
+    expect(fields).toHaveProperty("user.name");
+    expect(fields).toHaveProperty("user.age");
+    expect(fields).toHaveProperty("metadata.key");
+    expect(fields).toHaveProperty("metadata.value");
+
+    // Should include regular fields
+    expect(fields).toHaveProperty("title");
+  });
+
+  it("should exclude fields with index: false", () => {
+    const mapping: ElasticsearchIndexMapping = {
+      properties: {
+        indexed_field: { type: "text" },
+        not_indexed: { type: "text", index: false },
+      },
+    };
+
+    const fields = extractExistsFields(mapping);
+
+    expect(fields).toHaveProperty("indexed_field");
+    expect(fields).not.toHaveProperty("not_indexed");
+  });
+
+  it("should exclude object/nested with no indexed children", () => {
+    const mapping: ElasticsearchIndexMapping = {
+      properties: {
+        disabled_object: {
+          type: "object",
+          properties: {
+            field1: { type: "text", index: false },
+            field2: { type: "keyword", index: false },
+          },
+        },
+        enabled_object: {
+          type: "object",
+          properties: {
+            field1: { type: "text" },
+            field2: { type: "keyword", index: false },
+          },
+        },
+      },
+    };
+
+    const fields = extractExistsFields(mapping);
+
+    // disabled_object has no indexed children, should be excluded
+    expect(fields).not.toHaveProperty("disabled_object");
+    expect(fields).not.toHaveProperty("disabled_object.field1");
+    expect(fields).not.toHaveProperty("disabled_object.field2");
+
+    // enabled_object has at least one indexed child, should be included
+    expect(fields).toHaveProperty("enabled_object");
+    expect(fields).toHaveProperty("enabled_object.field1");
+    expect(fields).not.toHaveProperty("enabled_object.field2");
+  });
+
+  it("should handle deeply nested structures", () => {
+    const mapping: ElasticsearchIndexMapping = {
+      properties: {
+        level1: {
+          type: "object",
+          properties: {
+            level2: {
+              type: "object",
+              properties: {
+                level3: { type: "keyword" },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const fields = extractExistsFields(mapping);
+
+    expect(fields).toHaveProperty("level1");
+    expect(fields).toHaveProperty("level1.level2");
+    expect(fields).toHaveProperty("level1.level2.level3");
+  });
+
+  it("should work with nested objects containing both indexed and non-indexed fields", () => {
+    const mapping: ElasticsearchIndexMapping = {
+      properties: {
+        product: {
+          type: "object",
+          properties: {
+            id: { type: "keyword" },
+            name: { type: "text" },
+            internal_notes: { type: "text", index: false },
+            metadata: {
+              type: "object",
+              properties: {
+                created: { type: "date" },
+                debug_info: { type: "text", index: false },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const fields = extractExistsFields(mapping);
+
+    expect(fields).toHaveProperty("product");
+    expect(fields).toHaveProperty("product.id");
+    expect(fields).toHaveProperty("product.name");
+    expect(fields).not.toHaveProperty("product.internal_notes");
+    expect(fields).toHaveProperty("product.metadata");
+    expect(fields).toHaveProperty("product.metadata.created");
+    expect(fields).not.toHaveProperty("product.metadata.debug_info");
   });
 });
