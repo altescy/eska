@@ -9,6 +9,7 @@ const DEFAULT_EDITOR_SETTINGS: EditorSettings = {
   wordWrap: "on",
   minimap: false,
   keyBinding: "default",
+  clipboardFormat: "json",
 };
 
 export const editorSettingsAtom = atomWithStorage<EditorSettings>(EDITOR_SETTINGS_STORAGE_KEY, DEFAULT_EDITOR_SETTINGS);

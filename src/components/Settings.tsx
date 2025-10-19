@@ -112,6 +112,26 @@ export const Settings = ({ ...props }: SettingsProps) => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">Clipboard Format</div>
+                  <div className="text-sm text-muted-foreground">Format for copying query to clipboard</div>
+                </div>
+                <Select
+                  value={editorSettings.clipboardFormat}
+                  onValueChange={(value) =>
+                    setEditorSettings({ ...editorSettings, clipboardFormat: value as "json" | "jsonc" })
+                  }
+                >
+                  <SelectTrigger className="w-32 border-none bg-gray-100/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="jsonc">JSONC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </TabsContent>

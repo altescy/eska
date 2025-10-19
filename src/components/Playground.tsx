@@ -1,10 +1,13 @@
+import { useAtomValue } from "jotai";
+import JSON5 from "json5";
 import { Check, Clipboard, CornerDownRight, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { toast } from "sonner";
+import { editorSettingsAtom } from "@/atoms/editor";
 import { SaveCollectionDialog } from "@/components/Collections";
-import { Editor } from "@/components/Editor";
+import { Editor, type EditorHandle } from "@/components/Editor";
 import { Fields } from "@/components/Fields";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -30,6 +33,7 @@ import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
 
 const DEFAULT_QUERY = `{
+  // Default query to match all documents
   "query": {
     "match_all": {}
   }
@@ -56,10 +60,12 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const [selectedIndexName, setSelectedIndexName] = React.useState<string>();
     const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
     const [saveDialogOpen, setSaveDialogOpen] = React.useState(false);
+    const queryEditorRef = React.useRef<EditorHandle>(null);
     const clipboardForQuery = useClipboard();
 
     const elasticsearch = useElasticsearch();
     const collections = useCollections();
+    const editorSettings = useAtomValue(editorSettingsAtom);
 
     React.useImperativeHandle(
       ref,
@@ -84,8 +90,8 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         return query;
       }
       try {
-        const parsed = JSON.parse(query);
-        parsed._source = [...(parsed._source ?? []), ...selectedFields];
+        const parsed = JSON5.parse(query);
+        parsed._source = [...((parsed._source as string[]) ?? []), ...selectedFields];
         return JSON.stringify(parsed, null, 2);
       } catch {
         return query;
@@ -192,7 +198,8 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       if (!cluster || !selectedIndexName) return;
       (async () => {
         try {
-          const response = await elasticsearch.search(cluster, selectedIndexName, JSON.parse(composedQuery));
+          const queryObject = JSON5.parse(composedQuery);
+          const response = await elasticsearch.search(cluster, selectedIndexName, queryObject);
           setResponse(JSON.stringify(response, null, 2));
         } catch (error) {
           toast("Failed to execute search query.", {
@@ -204,14 +211,14 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     }, [composedQuery, selectedIndexName, elasticsearch.search]);
 
     const handleFormatQuery = React.useCallback(() => {
-      try {
-        const parsed = JSON.parse(query);
-        const formatted = JSON.stringify(parsed, null, 2);
-        setQuery(formatted);
-      } catch {
-        // Ignore JSON parse errors
-      }
-    }, [query]);
+      queryEditorRef.current?.format();
+    }, []);
+
+    const handleCopyQueryToClipboard = React.useCallback(() => {
+      const textToCopy =
+        editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
+      clipboardForQuery.copyToClipboard(textToCopy);
+    }, [clipboardForQuery, editorSettings.clipboardFormat, query]);
 
     const selectedIndex = React.useMemo(() => {
       if (selectedIndexName && indices) {
@@ -338,6 +345,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
                 <Panel className="w-full h-full flex gap-3 flex-1">
                   <div className="flex-1 min-w-0">
                     <Editor
+                      ref={queryEditorRef}
                       language="json"
                       schemas={querySchemas}
                       actions={queryActions}
@@ -369,7 +377,7 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
                     </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={() => clipboardForQuery.copyToClipboard(query)}>
+                        <Button variant="ghost" size="icon" onClick={handleCopyQueryToClipboard}>
                           {clipboardForQuery.isCopied ? <Check /> : <Clipboard />}
                         </Button>
                       </TooltipTrigger>
