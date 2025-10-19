@@ -263,18 +263,33 @@ export interface FieldsProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }: FieldsProps) => {
   const [query, setQuery] = React.useState("");
   const [selectedFields, setSelectedFields] = React.useState<string[]>([]);
+  const [showSelectedOnly, setShowSelectedOnly] = React.useState(false);
   const tableRef = React.useRef<FieldTableHandler>(null);
   const selectedFieldCount = React.useMemo(() => selectedFields.length, [selectedFields]);
 
   const filteredFields = React.useMemo(() => {
+    let fieldsToFilter = fields;
+
+    // First apply show-selected-only filter
+    if (showSelectedOnly) {
+      const result: Record<string, ElasticsearchField> = {};
+      for (const [name, field] of Object.entries(fields)) {
+        if (selectedFields.includes(name)) {
+          result[name] = field;
+        }
+      }
+      fieldsToFilter = result;
+    }
+
+    // Then apply text/attribute filter
     if (query.trim() === "") {
-      return fields;
+      return fieldsToFilter;
     }
 
     const criteria = parseFilterQuery(query);
     const result: Record<string, ElasticsearchField> = {};
 
-    for (const [name, field] of Object.entries(fields)) {
+    for (const [name, field] of Object.entries(fieldsToFilter)) {
       const isSelected = selectedFields.includes(name);
       if (matchesFilter(name, field, isSelected, criteria)) {
         result[name] = field;
@@ -282,7 +297,7 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
     }
 
     return result;
-  }, [fields, query, selectedFields]);
+  }, [fields, query, selectedFields, showSelectedOnly]);
   const handleSelectionChange = React.useCallback(
     (selectedFields: string[]) => {
       setSelectedFields(selectedFields);
@@ -297,9 +312,17 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
           <InputGroup className="border-none outline-none bg-white/15 rounded-md">
             <InputGroupAddon className="w-10 h-10">
               {selectedFieldCount > 0 ? (
-                <InputGroupText className="bg-gray-400/10 rounded-md text-xs w-full h-full flex items-center justify-center">
-                  {selectedFieldCount}
-                </InputGroupText>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InputGroupText
+                      className={`${showSelectedOnly ? "bg-gray-600/30" : "bg-gray-400/10"} rounded-md text-xs w-full h-full flex items-center justify-center cursor-pointer hover:bg-gray-500/20`}
+                      onClick={() => setShowSelectedOnly(!showSelectedOnly)}
+                    >
+                      {selectedFieldCount}
+                    </InputGroupText>
+                  </TooltipTrigger>
+                  <TooltipContent>{showSelectedOnly ? "Show all fields" : "Show selected only"}</TooltipContent>
+                </Tooltip>
               ) : (
                 <Popover>
                   <PopoverTrigger asChild>
