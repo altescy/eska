@@ -94,5 +94,27 @@ export const useTabs = () => {
     return tab;
   };
 
-  return { tabs, activeTabId, title, add, update, close, activate, scrollTo, next, previous, newPlaygroundTab };
+  const reorder = (fromIndex: number, toIndex: number) => {
+    setTabs((prevTabs) => {
+      const newTabs = [...prevTabs];
+      const [movedTab] = newTabs.splice(fromIndex, 1);
+      newTabs.splice(toIndex, 0, movedTab);
+      return newTabs;
+    });
+  };
+
+  return {
+    tabs,
+    activeTabId,
+    title,
+    add,
+    update,
+    close,
+    activate,
+    scrollTo,
+    next,
+    previous,
+    newPlaygroundTab,
+    reorder,
+  };
 };

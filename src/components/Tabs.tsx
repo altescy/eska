@@ -1,9 +1,21 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { clsx } from "clsx";
 import { Plus, X } from "lucide-react";
 import React from "react";
 import { Playground } from "@/components/Playground";
 import { useTabs } from "@/hooks/useTabs";
 import type { PlaygroundState } from "@/types/playground";
+import type { Tab } from "@/types/tab";
 import { OperationIcon } from "./Operations";
 
 const scrollToTab = (tabId: string) => {
@@ -13,12 +25,69 @@ const scrollToTab = (tabId: string) => {
   }
 };
 
+interface SortableTabItemProps {
+  tab: Tab;
+  isActive: boolean;
+  title: string;
+  onSelect: (tabId: string) => void;
+  onClose: (tabId: string) => void;
+}
+
+const SortableTabItem = ({ tab, isActive, title, onSelect, onClose }: SortableTabItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tab.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-tab-id={tab.id}
+      className={clsx(
+        "flex gap-0 items-center h-full text-sm rounded-lg p-0 hover:bg-white/30 transition-colors select-none",
+        isActive ? "bg-white/60 hover:bg-white/45" : "bg-white/15",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSelect(tab.id)}
+        className="max-w-xs truncate py-2 pl-2"
+        {...attributes}
+        {...listeners}
+      >
+        {tab.state.operation?.type && (
+          <OperationIcon operation={tab.state.operation.type} className="inline-block ml-1 mr-2 h-4 w-4" />
+        )}
+        {title}
+      </button>
+      <button type="button" onClick={() => onClose(tab.id)} className="py-2 pl-1 pr-2">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
+
 export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export type TabsHandler = Record<string, never>;
 
 export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref) => {
   const tabs = useTabs();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px移動するまでドラッグを開始しない（クリックとの区別）
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
 
   React.useImperativeHandle(ref, () => ({}), []);
 
@@ -33,6 +102,19 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     tabs.add(newTab);
     tabs.activate(newTab.id);
   }, [tabs]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = tabs.tabs.findIndex((tab) => tab.id === active.id);
+      const newIndex = tabs.tabs.findIndex((tab) => tab.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        tabs.reorder(oldIndex, newIndex);
+      }
+    }
+  };
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -87,33 +169,22 @@ export const Tabs = React.forwardRef<TabsHandler, TabsProps>(({ ...props }, ref)
     <div {...props}>
       <div className="flex flex-col gap-1 w-full h-full">
         <div className="flex gap-1 shrink-0 w-full h-10 max-w-full overflow-hidden items-center justify-start app-region-drag">
-          <div className="flex gap-2 h-9 w-fit overflow-y-hidden overflow-x-auto p-0 scrollbar-none">
-            {tabs.tabs.map((tab) => (
-              <div
-                key={tab.id}
-                data-tab-id={tab.id}
-                className={clsx(
-                  "flex gap-0 items-center h-full text-sm rounded-lg p-0 hover:bg-white/30 transition-colors select-none",
-                  tabs.activeTabId === tab.id ? "bg-white/60 hover:bg-white/45" : "bg-white/15",
-                )}
-              >
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => handleSelectTab(tab.id)}
-                  className="max-w-xs truncate py-2 pl-2"
-                >
-                  {tab.state.operation?.type && (
-                    <OperationIcon operation={tab.state.operation.type} className="inline-block ml-1 mr-2 h-4 w-4" />
-                  )}
-                  {tabs.title(tab)}
-                </button>
-                <button type="button" onClick={() => handleCloseTab(tab.id)} className="py-2 pl-1 pr-2">
-                  <X className="h-4 w-4" />
-                </button>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={tabs.tabs.map((tab) => tab.id)}>
+              <div className="flex gap-2 h-9 w-fit overflow-y-hidden overflow-x-auto p-0 scrollbar-none">
+                {tabs.tabs.map((tab) => (
+                  <SortableTabItem
+                    key={tab.id}
+                    tab={tab}
+                    isActive={tabs.activeTabId === tab.id}
+                    title={tabs.title(tab)}
+                    onSelect={handleSelectTab}
+                    onClose={handleCloseTab}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
           <button
             type="button"
             onClick={() => handleAddTab()}
