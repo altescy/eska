@@ -1,7 +1,14 @@
 import { useAtom } from "jotai";
 import React from "react";
 import { activeTabIdAtom, tabsAtom } from "@/atoms/tabs";
-import { uuid4 } from "@/lib/uuid";
+import {
+  createPlaygroundTab,
+  findNextActiveTab,
+  getNextTabIndex,
+  getPreviousTabIndex,
+  getTabTitle,
+  reorderTabs,
+} from "@/lib/tab";
 import type { PlaygroundState } from "@/types/playground";
 import type { Tab } from "@/types/tab";
 
@@ -10,23 +17,6 @@ const scrollToTab = (tabId: string) => {
   if (tabElement) {
     tabElement.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   }
-};
-
-const getTabTitle = (tab: Tab): string => {
-  if (tab.title) {
-    return tab.title;
-  }
-  if (tab.type === "playground") {
-    if (tab.state.operation) {
-      switch (tab.state.operation.type) {
-        case "search":
-          return `${tab.state.clusterName ?? "No cluster"} / ${tab.state.operation.indexName ?? "No index"}`.trim();
-        default:
-          return "Playground";
-      }
-    }
-  }
-  return "New Tab";
 };
 
 export const useTabs = () => {
@@ -50,8 +40,7 @@ export const useTabs = () => {
   const close = (tabId: string) => {
     setTabs((prevTabs) => {
       if (activeTabId === tabId) {
-        const tabIndex = prevTabs.findIndex((tab) => tab.id === tabId);
-        const newActiveTab = prevTabs[tabIndex - 1] || prevTabs[tabIndex + 1];
+        const newActiveTab = findNextActiveTab(prevTabs, tabId);
         setActiveTabId(newActiveTab ? newActiveTab.id : null);
       }
       return prevTabs.filter((tab) => tab.id !== tabId);
@@ -69,38 +58,28 @@ export const useTabs = () => {
     if (!activeTabId || tabs.length === 0) return;
     const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
     if (currentIndex === -1) return;
-    const nextIndex = (currentIndex + 1) % tabs.length;
-    activate(tabs[nextIndex].id);
+    const nextIndex = getNextTabIndex(currentIndex, tabs.length);
+    if (nextIndex !== -1) {
+      activate(tabs[nextIndex].id);
+    }
   };
 
   const previous = () => {
     if (!activeTabId || tabs.length === 0) return;
     const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
     if (currentIndex === -1) return;
-    const previousIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-    activate(tabs[previousIndex].id);
+    const previousIndex = getPreviousTabIndex(currentIndex, tabs.length);
+    if (previousIndex !== -1) {
+      activate(tabs[previousIndex].id);
+    }
   };
 
   const newPlaygroundTab = (state?: Partial<PlaygroundState>): Tab => {
-    const tab: Tab = {
-      id: uuid4(),
-      type: "playground",
-      state: {
-        collectionId: uuid4(),
-        ...state,
-      },
-    };
-    tab.title = getTabTitle(tab);
-    return tab;
+    return createPlaygroundTab(state);
   };
 
   const reorder = (fromIndex: number, toIndex: number) => {
-    setTabs((prevTabs) => {
-      const newTabs = [...prevTabs];
-      const [movedTab] = newTabs.splice(fromIndex, 1);
-      newTabs.splice(toIndex, 0, movedTab);
-      return newTabs;
-    });
+    setTabs((prevTabs) => reorderTabs(prevTabs, fromIndex, toIndex));
   };
 
   return {
