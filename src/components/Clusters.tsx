@@ -54,33 +54,47 @@ interface ClusterAuthConfigHandler<T extends AuthConfig> {
 
 interface ClusterNoAuthConfigProps extends React.HTMLAttributes<HTMLDivElement> {
   auth: NoAuth;
+  tunnelType: TunnelType;
 }
 
 interface ClusterNoAuthConfigHandler extends ClusterAuthConfigHandler<NoAuth> {}
 
 const ClusterNoAuthConfig = React.forwardRef<ClusterNoAuthConfigHandler, ClusterNoAuthConfigProps>(
-  ({ auth, ...props }, ref) => {
+  ({ auth, tunnelType, ...props }, ref) => {
     const [host, setHost] = React.useState(auth.host);
+    const isPortForwarding = tunnelType !== "none";
 
     React.useImperativeHandle(
       ref,
       () => ({
         getAuth: () => ({
           type: "noauth",
-          host,
+          host: isPortForwarding ? "http://localhost" : host,
         }),
       }),
-      [host],
+      [host, isPortForwarding],
     );
 
     return (
-      <div {...props} className="grid gap-4 mt-4">
+      <div {...props} className="mt-2">
         <InputGroup>
           <InputGroupAddon>
             <Server />
           </InputGroupAddon>
-          <InputGroupInput type="text" placeholder="Host" value={host} onChange={(e) => setHost(e.target.value)} />
+          <InputGroupInput
+            type="text"
+            placeholder={isPortForwarding ? "Host (managed by port forwarding)" : "Host (e.g., http://localhost:9200)"}
+            value={isPortForwarding ? "http://localhost (via port forwarding)" : host}
+            onChange={(e) => setHost(e.target.value)}
+            disabled={isPortForwarding}
+            className={clsx(isPortForwarding && "text-gray-500 cursor-not-allowed")}
+          />
         </InputGroup>
+        {isPortForwarding && (
+          <p className="text-xs text-gray-500 mt-1 ml-2">
+            Host is automatically set to localhost when using port forwarding
+          </p>
+        )}
       </div>
     );
   },
@@ -88,37 +102,55 @@ const ClusterNoAuthConfig = React.forwardRef<ClusterNoAuthConfigHandler, Cluster
 
 interface ClusterBasicAuthConfigProps extends React.HTMLAttributes<HTMLDivElement> {
   auth: BasicAuth;
+  tunnelType: TunnelType;
 }
 
 interface ClusterBasicAuthConfigHandler extends ClusterAuthConfigHandler<BasicAuth> {}
 
 const ClusterBasicAuthConfig = React.forwardRef<ClusterBasicAuthConfigHandler, ClusterBasicAuthConfigProps>(
-  ({ auth, ...props }, ref) => {
+  ({ auth, tunnelType, ...props }, ref) => {
     const [host, setHost] = React.useState(auth.host);
     const [username, setUsername] = React.useState(auth.username);
     const [password, setPassword] = React.useState(auth.password);
+    const isPortForwarding = tunnelType !== "none";
 
     React.useImperativeHandle(
       ref,
       () => ({
         getAuth: () => ({
           type: "basic",
-          host,
+          host: isPortForwarding ? "http://localhost" : host,
           username,
           password,
         }),
       }),
-      [host, username, password],
+      [host, username, password, isPortForwarding],
     );
 
     return (
       <div {...props} className="grid gap-4 mt-4">
-        <InputGroup>
-          <InputGroupAddon>
-            <Server />
-          </InputGroupAddon>
-          <InputGroupInput type="text" placeholder="Host" value={host} onChange={(e) => setHost(e.target.value)} />
-        </InputGroup>
+        <div>
+          <InputGroup>
+            <InputGroupAddon>
+              <Server />
+            </InputGroupAddon>
+            <InputGroupInput
+              type="text"
+              placeholder={
+                isPortForwarding ? "Host (managed by port forwarding)" : "Host (e.g., http://localhost:9200)"
+              }
+              value={isPortForwarding ? "http://localhost (via port forwarding)" : host}
+              onChange={(e) => setHost(e.target.value)}
+              disabled={isPortForwarding}
+              className={clsx(isPortForwarding && "text-gray-500 cursor-not-allowed")}
+            />
+          </InputGroup>
+          {isPortForwarding && (
+            <p className="text-xs text-gray-500 mt-1 ml-2">
+              Host is automatically set to localhost when using port forwarding
+            </p>
+          )}
+        </div>
         <InputGroup>
           <InputGroupAddon>
             <User />
@@ -464,6 +496,7 @@ const ClusterConfig = React.forwardRef(
                     ? (initialCluster.auth as NoAuth)
                     : { type: "noauth", host: "" }
                 }
+                tunnelType={tunnelType}
               />
             </TabsContent>
             <TabsContent value="basic">
@@ -474,6 +507,7 @@ const ClusterConfig = React.forwardRef(
                     ? (initialCluster.auth as BasicAuth)
                     : { type: "basic", host: "", username: "", password: "" }
                 }
+                tunnelType={tunnelType}
               />
             </TabsContent>
           </Tabs>
@@ -697,12 +731,14 @@ export const Clusters = ({ ...props }: ClustersProps) => {
                 </TooltipTrigger>
                 <TooltipContent>Add cluster</TooltipContent>
               </Tooltip>
-              <DialogContent className="max-w-lg bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
+              <DialogContent className="max-w-lg max-h-[90vh] flex flex-col bg-white/65 backdrop-blur-3xl backdrop-brightness-150">
                 <DialogHeader>
                   <DialogTitle>Add Cluster</DialogTitle>
                   <DialogDescription>Add a new Elasticsearch cluster configuration.</DialogDescription>
                 </DialogHeader>
-                <ClusterConfig ref={dialogRef} initialCluster={selectedCluster} />
+                <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-2">
+                  <ClusterConfig ref={dialogRef} initialCluster={selectedCluster} />
+                </div>
                 {connectionTestResult && (
                   <div
                     className={clsx(
