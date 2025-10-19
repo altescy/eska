@@ -1,4 +1,4 @@
-import { Check, Clipboard, Play, Save, Sparkles } from "lucide-react";
+import { Check, Clipboard, CornerDownRight, Play, Save, Sparkles } from "lucide-react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
@@ -215,7 +215,17 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
 
     const selectedIndex = React.useMemo(() => {
       if (selectedIndexName && indices) {
-        return indices[selectedIndexName];
+        // First, try to find the index directly
+        if (indices[selectedIndexName]) {
+          return indices[selectedIndexName];
+        }
+
+        // If not found, search for an index that has this name as an alias
+        for (const [_indexName, index] of Object.entries(indices)) {
+          if (Object.keys(index.aliases).includes(selectedIndexName)) {
+            return index;
+          }
+        }
       }
     }, [selectedIndexName, indices]);
 
@@ -280,21 +290,39 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
             </Select>
             <Combobox
               initialKey={selectedIndexName}
-              items={Object.entries(indices ?? {}).map(([name, index]) => ({
-                key: name,
-                value: name,
-                label: name,
-                details: (
-                  <div>
-                    {Object.keys(index.aliases).map((alias) => (
-                      <div key={alias} className="text-xs text-gray-400">
-                        {alias}
+              items={[
+                // Create items for indices
+                ...Object.entries(indices ?? {}).map(([name, index]) => ({
+                  key: name,
+                  value: name,
+                  label: name,
+                  details: (
+                    <div className="text-xs text-gray-500">
+                      {Object.keys(index.aliases).length > 0
+                        ? Object.keys(index.aliases).map((alias) => (
+                            <div key={alias} className="ml-2">
+                              {alias}
+                            </div>
+                          ))
+                        : "Index"}
+                    </div>
+                  ),
+                })),
+                // Create items for aliases
+                ...Object.entries(indices ?? {}).flatMap(([indexName, index]) =>
+                  Object.keys(index.aliases).map((alias) => ({
+                    key: alias,
+                    value: alias,
+                    label: alias,
+                    details: (
+                      <div className="text-xs text-gray-500">
+                        <CornerDownRight className="text-gray-400 inline-block -translate-y-0.5" /> {indexName}
                       </div>
-                    ))}
-                  </div>
+                    ),
+                  })),
                 ),
-              }))}
-              placeholder={elasticsearch.isLoading ? "Loading indices..." : "Select index"}
+              ]}
+              placeholder={elasticsearch.isLoading ? "Loading indices..." : "Select index or alias"}
               onSelectItem={(selected) => setSelectedIndexName(selected?.key)}
               className="bg-white/40  rounded-l-none rounded-r-lg w-full overflow-hidden"
             />
