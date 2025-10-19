@@ -2,7 +2,17 @@ import { app, BrowserWindow, ipcMain, safeStorage } from 'electron'
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fixPath from 'fix-path'
 import { PortForwardManager } from './portForwardManager.js'
+
+// Fix PATH for macOS when running as packaged app
+// This ensures kubectl, ssh, and other CLI tools can be found
+fixPath()
+
+// Debug logging
+if (process.env.DEBUG_PORT_FORWARD === '1') {
+  console.log('[main.ts] PATH after fixPath:', process.env.PATH)
+}
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
