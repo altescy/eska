@@ -88,7 +88,7 @@ export interface ElasticsearchGetResponse<T = JSONValue> {
   _routing?: string;
 }
 
-export type ElasticsearchOperation = "search" | "get" | "analyze";
+export type ElasticsearchOperation = "search" | "get" | "analyze" | "info";
 
 export interface BaseElasticsearchOperationState<Operation extends ElasticsearchOperation> {
   type: Operation;
@@ -148,7 +148,19 @@ export interface ElasticsearchAnalyzeOperationState extends BaseElasticsearchOpe
   response?: string;
 }
 
+export type InfoType = "mapping" | "settings" | "aliases" | "stats";
+
+export interface ElasticsearchInfoOperationState extends BaseElasticsearchOperationState<"info"> {
+  type: "info";
+  clusterId?: string;
+  clusterName?: string;
+  indexName?: string;
+  infoType?: InfoType;
+  response?: string;
+}
+
 export type ElasticsearchOperationState =
   | ElasticsearchSearchOperationState
   | ElasticsearchGetOperationState
-  | ElasticsearchAnalyzeOperationState;
+  | ElasticsearchAnalyzeOperationState
+  | ElasticsearchInfoOperationState;

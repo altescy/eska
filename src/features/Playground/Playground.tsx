@@ -20,6 +20,7 @@ import type {
   ElasticsearchAnalyzeOperationState,
   ElasticsearchGetIndicesResponse,
   ElasticsearchGetOperationState,
+  ElasticsearchInfoOperationState,
   ElasticsearchOperation,
   ElasticsearchOperationState,
 } from "@/types/elasticsearch";
@@ -27,6 +28,7 @@ import type { PlaygroundState } from "@/types/playground";
 
 import { AnalyzeForm } from "./forms/AnalyzeForm";
 import { GetForm } from "./forms/GetForm";
+import { InfoForm } from "./forms/InfoForm";
 import { PlaygroundToolbar } from "./PlaygroundToolbar";
 import { QueryEditor } from "./QueryEditor";
 import { ResponseViewer } from "./ResponseViewer";
@@ -115,6 +117,16 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               attributes: analyzeState.attributes,
               response,
             };
+          } else if (operationType === "info") {
+            const infoState = operationState as ElasticsearchInfoOperationState;
+            operation = {
+              type: "info",
+              clusterId: cluster?.id,
+              clusterName: cluster?.name,
+              indexName: selectedIndexName,
+              infoType: infoState.infoType,
+              response,
+            };
           } else {
             operation = {
               type: "search",
@@ -196,6 +208,16 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           attributes: analyzeState.attributes,
           response,
         };
+      } else if (operationType === "info") {
+        const infoState = operationState as ElasticsearchInfoOperationState;
+        content = {
+          type: "info",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          infoType: infoState.infoType,
+          response,
+        };
       } else {
         content = {
           type: "search",
@@ -264,6 +286,16 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           attributes: analyzeState.attributes,
           response,
         };
+      } else if (operationType === "info") {
+        const infoState = operationState as ElasticsearchInfoOperationState;
+        operation = {
+          type: "info",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          infoType: infoState.infoType,
+          response,
+        };
       } else {
         operation = {
           type: "search",
@@ -302,6 +334,8 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         } else if (operation.type === "get") {
           setOperationState(operation);
         } else if (operation.type === "analyze") {
+          setOperationState(operation);
+        } else if (operation.type === "info") {
           setOperationState(operation);
         }
         if (operation.response) {
@@ -434,6 +468,25 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [cluster, selectedIndexName, operationState, elasticsearch.analyzeText]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
+    const handleInfo = React.useCallback(() => {
+      if (!cluster || !selectedIndexName) return;
+      (async () => {
+        try {
+          const infoState = operationState as ElasticsearchInfoOperationState;
+          const infoType = infoState.infoType ?? "mapping";
+
+          const response = await elasticsearch.getIndexInfo(cluster, selectedIndexName, infoType);
+          setResponse(JSON.stringify(response, null, 2));
+        } catch (error) {
+          toast("Failed to get index information.", {
+            description: error instanceof Error ? error.message : String(error),
+          });
+          console.error("Error getting index info:", error);
+        }
+      })();
+    }, [cluster, selectedIndexName, operationState, elasticsearch.getIndexInfo]);
+
     const handleCopyQueryToClipboard = React.useCallback(() => {
       const textToCopy =
         editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
@@ -529,6 +582,17 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
             isRunDisabled={!cluster}
             onStateChange={setOperationState}
             onRun={handleAnalyze}
+          />
+        );
+      }
+      if (operationType === "info") {
+        return (
+          <InfoForm
+            state={operationState as Partial<ElasticsearchInfoOperationState>}
+            isLoading={elasticsearch.isLoading}
+            isRunDisabled={!cluster || !selectedIndexName}
+            onStateChange={setOperationState}
+            onRun={handleInfo}
           />
         );
       }

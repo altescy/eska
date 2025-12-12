@@ -71,6 +71,7 @@ export const PlaygroundToolbar = ({
             <SelectItem value="search">SEARCH</SelectItem>
             <SelectItem value="get">GET</SelectItem>
             <SelectItem value="analyze">ANALYZE</SelectItem>
+            <SelectItem value="info">INFO</SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>

@@ -10,6 +10,7 @@ import type {
   ElasticsearchErrorResponse,
   ElasticsearchGetIndicesResponse,
   ElasticsearchGetResponse,
+  InfoType,
 } from "@/types/elasticsearch";
 
 export const useElasticsearch = () => {
@@ -193,5 +194,27 @@ export const useElasticsearch = () => {
     [request],
   );
 
-  return { ping, health, search, getIndices, getDocument, analyzeText, isLoading };
+  const getIndexInfo = React.useCallback(
+    async (cluster: Cluster, index: string, infoType: InfoType): Promise<JSONValue> => {
+      let path: string;
+      switch (infoType) {
+        case "mapping":
+          path = `${quote(index)}/_mapping`;
+          break;
+        case "settings":
+          path = `${quote(index)}/_settings`;
+          break;
+        case "aliases":
+          path = `${quote(index)}/_alias`;
+          break;
+        case "stats":
+          path = `${quote(index)}/_stats`;
+          break;
+      }
+      return await request(cluster, "GET", path);
+    },
+    [request],
+  );
+
+  return { ping, health, search, getIndices, getDocument, analyzeText, getIndexInfo, isLoading };
 };
