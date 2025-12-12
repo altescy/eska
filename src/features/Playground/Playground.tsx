@@ -8,10 +8,16 @@ import { useClipboard } from "@/hooks/useClipboard";
 import { useClusters } from "@/hooks/useClusters";
 import { useCollections } from "@/hooks/useCollections";
 import { useElasticsearch } from "@/hooks/useElasticsearch";
-import { extractFields, generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
+import {
+  extractAnalyzableFields,
+  extractAnalyzers,
+  extractFields,
+  generateElasticsearchQuerySchema,
+} from "@/lib/elasticsearch";
 import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
 import type {
+  ElasticsearchAnalyzeOperationState,
   ElasticsearchGetIndicesResponse,
   ElasticsearchGetOperationState,
   ElasticsearchOperation,
@@ -19,6 +25,7 @@ import type {
 } from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
 
+import { AnalyzeForm } from "./forms/AnalyzeForm";
 import { GetForm } from "./forms/GetForm";
 import { PlaygroundToolbar } from "./PlaygroundToolbar";
 import { QueryEditor } from "./QueryEditor";
@@ -91,6 +98,23 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
               sourceExcludes: getState.sourceExcludes,
               response,
             };
+          } else if (operationType === "analyze") {
+            const analyzeState = operationState as ElasticsearchAnalyzeOperationState;
+            operation = {
+              type: "analyze",
+              clusterId: cluster?.id,
+              clusterName: cluster?.name,
+              indexName: selectedIndexName,
+              text: analyzeState.text,
+              analyzer: analyzeState.analyzer,
+              field: analyzeState.field,
+              tokenizer: analyzeState.tokenizer,
+              filter: analyzeState.filter,
+              charFilter: analyzeState.charFilter,
+              explain: analyzeState.explain,
+              attributes: analyzeState.attributes,
+              response,
+            };
           } else {
             operation = {
               type: "search",
@@ -155,6 +179,23 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           sourceExcludes: getState.sourceExcludes,
           response,
         };
+      } else if (operationType === "analyze") {
+        const analyzeState = operationState as ElasticsearchAnalyzeOperationState;
+        content = {
+          type: "analyze",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          text: analyzeState.text,
+          analyzer: analyzeState.analyzer,
+          field: analyzeState.field,
+          tokenizer: analyzeState.tokenizer,
+          filter: analyzeState.filter,
+          charFilter: analyzeState.charFilter,
+          explain: analyzeState.explain,
+          attributes: analyzeState.attributes,
+          response,
+        };
       } else {
         content = {
           type: "search",
@@ -206,6 +247,23 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
           sourceExcludes: getState.sourceExcludes,
           response,
         };
+      } else if (operationType === "analyze") {
+        const analyzeState = operationState as ElasticsearchAnalyzeOperationState;
+        operation = {
+          type: "analyze",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          text: analyzeState.text,
+          analyzer: analyzeState.analyzer,
+          field: analyzeState.field,
+          tokenizer: analyzeState.tokenizer,
+          filter: analyzeState.filter,
+          charFilter: analyzeState.charFilter,
+          explain: analyzeState.explain,
+          attributes: analyzeState.attributes,
+          response,
+        };
       } else {
         operation = {
           type: "search",
@@ -242,6 +300,8 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
             setQuery(operation.query);
           }
         } else if (operation.type === "get") {
+          setOperationState(operation);
+        } else if (operation.type === "analyze") {
           setOperationState(operation);
         }
         if (operation.response) {
@@ -341,6 +401,39 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [cluster, selectedIndexName, operationState, selectedFields, elasticsearch.getDocument]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
+    const handleAnalyze = React.useCallback(() => {
+      if (!cluster) return;
+      (async () => {
+        try {
+          const analyzeState = operationState as ElasticsearchAnalyzeOperationState;
+          if (!analyzeState.text) {
+            toast("Text is required.", {
+              description: "Please enter text to analyze.",
+            });
+            return;
+          }
+
+          const response = await elasticsearch.analyzeText(cluster, selectedIndexName, {
+            text: analyzeState.text,
+            analyzer: analyzeState.analyzer,
+            field: analyzeState.field,
+            tokenizer: analyzeState.tokenizer,
+            filter: analyzeState.filter,
+            charFilter: analyzeState.charFilter,
+            explain: analyzeState.explain,
+            attributes: analyzeState.attributes,
+          });
+          setResponse(JSON.stringify(response, null, 2));
+        } catch (error) {
+          toast("Failed to analyze text.", {
+            description: error instanceof Error ? error.message : String(error),
+          });
+          console.error("Error analyzing text:", error);
+        }
+      })();
+    }, [cluster, selectedIndexName, operationState, elasticsearch.analyzeText]);
+
     const handleCopyQueryToClipboard = React.useCallback(() => {
       const textToCopy =
         editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
@@ -381,6 +474,21 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       [selectedIndex],
     );
 
+    const analyzers = React.useMemo(
+      () => (selectedIndex ? extractAnalyzers(selectedIndex) : undefined),
+      [selectedIndex],
+    );
+
+    const analyzableFields = React.useMemo(
+      () => (selectedIndex ? extractAnalyzableFields(selectedIndex.mappings) : undefined),
+      [selectedIndex],
+    );
+
+    const analyzableFieldNames = React.useMemo(
+      () => (analyzableFields ? Object.keys(analyzableFields) : undefined),
+      [analyzableFields],
+    );
+
     const renderForm = () => {
       if (operationType === "search") {
         return (
@@ -408,6 +516,19 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
             onStateChange={setOperationState}
             onFieldsSelectionChange={setSelectedFields}
             onRun={handleGet}
+          />
+        );
+      }
+      if (operationType === "analyze") {
+        return (
+          <AnalyzeForm
+            state={operationState as Partial<ElasticsearchAnalyzeOperationState>}
+            analyzers={analyzers}
+            fields={analyzableFieldNames}
+            isLoading={elasticsearch.isLoading}
+            isRunDisabled={!cluster}
+            onStateChange={setOperationState}
+            onRun={handleAnalyze}
           />
         );
       }

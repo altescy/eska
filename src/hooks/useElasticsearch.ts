@@ -5,6 +5,7 @@ import { buildElasticsearchHeaders, buildIndexCacheKey, buildUrlWithParams, quot
 import type { Cluster } from "@/types/cluster";
 import type {
   ElaseticsearchSearchResponse,
+  ElasticsearchAnalyzeResponse,
   ElasticsearchClusterHealthResponse,
   ElasticsearchErrorResponse,
   ElasticsearchGetIndicesResponse,
@@ -160,5 +161,37 @@ export const useElasticsearch = () => {
     [request],
   );
 
-  return { ping, health, search, getIndices, getDocument, isLoading };
+  const analyzeText = React.useCallback(
+    async (
+      cluster: Cluster,
+      index: string | undefined,
+      options: {
+        text: string;
+        analyzer?: string;
+        field?: string;
+        tokenizer?: string;
+        filter?: string[];
+        charFilter?: string[];
+        explain?: boolean;
+        attributes?: string[];
+      },
+    ): Promise<ElasticsearchAnalyzeResponse | ElasticsearchErrorResponse> => {
+      const body: Record<string, unknown> = {
+        text: options.text,
+      };
+      if (options.analyzer) body.analyzer = options.analyzer;
+      if (options.field) body.field = options.field;
+      if (options.tokenizer) body.tokenizer = options.tokenizer;
+      if (options.filter && options.filter.length > 0) body.filter = options.filter;
+      if (options.charFilter && options.charFilter.length > 0) body.char_filter = options.charFilter;
+      if (options.explain !== undefined) body.explain = options.explain;
+      if (options.attributes && options.attributes.length > 0) body.attributes = options.attributes;
+
+      const path = index ? `${quote(index)}/_analyze` : "/_analyze";
+      return await request(cluster, "POST", path, { body });
+    },
+    [request],
+  );
+
+  return { ping, health, search, getIndices, getDocument, analyzeText, isLoading };
 };

@@ -1,4 +1,4 @@
-import { FileText, Search } from "lucide-react";
+import { FileText, Microscope, Search } from "lucide-react";
 import type { ElasticsearchOperation } from "@/types/elasticsearch";
 
 export interface OperationIconProps extends React.HTMLAttributes<SVGSVGElement> {
@@ -11,6 +11,9 @@ export const OperationIcon = ({ operation, ...props }: OperationIconProps) => {
   }
   if (operation === "get") {
     return <FileText {...props} />;
+  }
+  if (operation === "analyze") {
+    return <Microscope {...props} />;
   }
   return null;
 };

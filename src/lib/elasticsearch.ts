@@ -1,6 +1,6 @@
 import { minimatch } from "minimatch";
 import type { Cluster } from "@/types/cluster";
-import type { ElasticsearchField, ElasticsearchIndexMapping } from "@/types/elasticsearch.js";
+import type { ElasticsearchField, ElasticsearchIndex, ElasticsearchIndexMapping } from "@/types/elasticsearch.js";
 
 export const quote = (str: string) => encodeURIComponent(str);
 
@@ -1332,6 +1332,38 @@ export function generateElasticsearchQuerySchema(mapping?: ElasticsearchIndexMap
   };
 }
 
+/**
+ * Extract analyzers from index settings
+ * Returns built-in analyzers and custom analyzers defined in the index
+ */
+export function extractAnalyzers(indexOrSettings: ElasticsearchIndex | Record<string, unknown>): string[] {
+  const builtInAnalyzers = [
+    "standard",
+    "simple",
+    "whitespace",
+    "stop",
+    "keyword",
+    "pattern",
+    "language",
+    "fingerprint",
+  ];
+
+  // Extract custom analyzers from settings
+  const settings = "settings" in indexOrSettings ? indexOrSettings.settings : indexOrSettings;
+  const customAnalyzers: string[] = [];
+
+  // Check for analyzers in settings.analysis.analyzer or settings.index.analysis.analyzer
+  const settingsObj = settings as Record<string, unknown>;
+  const analysis =
+    (settingsObj.analysis as Record<string, unknown> | undefined) ||
+    ((settingsObj.index as Record<string, unknown> | undefined)?.analysis as Record<string, unknown> | undefined);
+  if (analysis?.analyzer && typeof analysis.analyzer === "object") {
+    customAnalyzers.push(...Object.keys(analysis.analyzer as Record<string, unknown>));
+  }
+
+  return [...builtInAnalyzers, ...customAnalyzers];
+}
+
 export function extractFields(
   mapping: ElasticsearchIndexMapping | ElasticsearchIndexMapping["properties"],
   prefix: string = "",
@@ -1415,6 +1447,22 @@ export function extractTextFields(
   const textTypes = ["text", "match_only_text", "search_as_you_type", "keyword", "constant_keyword", "wildcard"];
   return Object.fromEntries(
     Object.entries(extractIndexFields(mapping, prefix)).filter(([_, config]) => textTypes.includes(config.type)),
+  );
+}
+
+/**
+ * Extract fields that support analyzer
+ * Suitable for: analyze API field parameter
+ * Includes text-based fields that can have analyzers configured
+ */
+export function extractAnalyzableFields(
+  mapping: ElasticsearchIndexMapping | ElasticsearchIndexMapping["properties"],
+  prefix = "",
+): Record<string, ElasticsearchField> {
+  // Fields that support analyzer configuration
+  const analyzableTypes = ["text", "keyword", "match_only_text", "search_as_you_type", "completion"];
+  return Object.fromEntries(
+    Object.entries(extractIndexFields(mapping, prefix)).filter(([_, config]) => analyzableTypes.includes(config.type)),
   );
 }
 
