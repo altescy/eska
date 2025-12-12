@@ -8,6 +8,7 @@ import type {
   ElasticsearchClusterHealthResponse,
   ElasticsearchErrorResponse,
   ElasticsearchGetIndicesResponse,
+  ElasticsearchGetResponse,
 } from "@/types/elasticsearch";
 
 export const useElasticsearch = () => {
@@ -118,5 +119,46 @@ export const useElasticsearch = () => {
     [request, cachedIndices, setCachedIndices],
   );
 
-  return { ping, health, search, getIndices, isLoading };
+  const getDocument = React.useCallback(
+    async (
+      cluster: Cluster,
+      index: string,
+      id: string,
+      options?: {
+        routing?: string;
+        preference?: string;
+        realtime?: boolean;
+        refresh?: boolean;
+        version?: number;
+        versionType?: string;
+        storedFields?: string[];
+        _source?: boolean | string[];
+        _sourceExcludes?: string[];
+      },
+    ): Promise<ElasticsearchGetResponse | ElasticsearchErrorResponse> => {
+      const params: Record<string, string | number | boolean> = {};
+      if (options?.routing) params.routing = options.routing;
+      if (options?.preference) params.preference = options.preference;
+      if (options?.realtime !== undefined) params.realtime = options.realtime;
+      if (options?.refresh !== undefined) params.refresh = options.refresh;
+      if (options?.version !== undefined) params.version = options.version;
+      if (options?.versionType) params.version_type = options.versionType;
+      if (options?.storedFields && options.storedFields.length > 0) {
+        params.stored_fields = options.storedFields.join(",");
+      }
+      if (options?._source === false) {
+        params._source = false;
+      } else if (Array.isArray(options?._source) && options._source.length > 0) {
+        params._source = options._source.join(",");
+      }
+      if (options?._sourceExcludes && options._sourceExcludes.length > 0) {
+        params._source_excludes = options._sourceExcludes.join(",");
+      }
+
+      return await request(cluster, "GET", `${quote(index)}/_doc/${quote(id)}`, { params });
+    },
+    [request],
+  );
+
+  return { ping, health, search, getIndices, getDocument, isLoading };
 };

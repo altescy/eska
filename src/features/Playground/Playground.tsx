@@ -11,9 +11,15 @@ import { useElasticsearch } from "@/hooks/useElasticsearch";
 import { extractFields, generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
 import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
-import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
+import type {
+  ElasticsearchGetIndicesResponse,
+  ElasticsearchGetOperationState,
+  ElasticsearchOperation,
+  ElasticsearchOperationState,
+} from "@/types/elasticsearch";
 import type { PlaygroundState } from "@/types/playground";
 
+import { GetForm } from "./forms/GetForm";
 import { PlaygroundToolbar } from "./PlaygroundToolbar";
 import { QueryEditor } from "./QueryEditor";
 import { ResponseViewer } from "./ResponseViewer";
@@ -38,6 +44,8 @@ export interface PlaygroundHandler {
 export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
   ({ collectionId, initialState, onStateChange, hidden, ...props }, ref) => {
     const [isInitialized, setIsInitialized] = React.useState(false);
+    const [operationType, setOperationType] = React.useState<ElasticsearchOperation>("search");
+    const [operationState, setOperationState] = React.useState<Partial<ElasticsearchOperationState>>({});
     const [query, setQuery] = React.useState(DEFAULT_QUERY);
     const [response, setResponse] = React.useState("");
     const [clusters] = useClusters();
@@ -55,19 +63,51 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     React.useImperativeHandle(
       ref,
       () => ({
-        getState: () => ({
-          collectionId,
-          clusterId: cluster?.id,
-          clusterName: cluster?.name,
-          operation: {
-            type: "search",
-            indexName: selectedIndexName,
-            query,
-            response,
-          },
-        }),
+        getState: () => {
+          let operation: ElasticsearchOperationState;
+          if (operationType === "search") {
+            operation = {
+              type: "search",
+              indexName: selectedIndexName,
+              query,
+              response,
+            };
+          } else if (operationType === "get") {
+            const getState = operationState as ElasticsearchGetOperationState;
+            operation = {
+              type: "get",
+              clusterId: cluster?.id,
+              clusterName: cluster?.name,
+              indexName: selectedIndexName,
+              documentId: getState.documentId,
+              routing: getState.routing,
+              preference: getState.preference,
+              realtime: getState.realtime,
+              refresh: getState.refresh,
+              version: getState.version,
+              versionType: getState.versionType,
+              storedFields: getState.storedFields,
+              sourceIncludes: getState.sourceIncludes,
+              sourceExcludes: getState.sourceExcludes,
+              response,
+            };
+          } else {
+            operation = {
+              type: "search",
+              indexName: selectedIndexName,
+              query,
+              response,
+            };
+          }
+          return {
+            collectionId,
+            clusterId: cluster?.id,
+            clusterName: cluster?.name,
+            operation,
+          };
+        },
       }),
-      [cluster, selectedIndexName, query, response, collectionId],
+      [cluster, selectedIndexName, query, response, collectionId, operationType, operationState],
     );
 
     const composedQuery = React.useMemo(() => {
@@ -87,39 +127,101 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
     const collection = React.useMemo((): Collection => {
       let existing = collectionId ? collections.byId(collectionId) : undefined;
       if (existing?.type !== "elasticsearch") existing = undefined;
+
+      let content: ElasticsearchOperationState;
+      if (operationType === "search") {
+        content = {
+          type: "search",
+          indexName: selectedIndexName,
+          query,
+          response,
+        };
+      } else if (operationType === "get") {
+        const getState = operationState as ElasticsearchGetOperationState;
+        content = {
+          type: "get",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          documentId: getState.documentId,
+          routing: getState.routing,
+          preference: getState.preference,
+          realtime: getState.realtime,
+          refresh: getState.refresh,
+          version: getState.version,
+          versionType: getState.versionType,
+          storedFields: getState.storedFields,
+          sourceIncludes: getState.sourceIncludes,
+          sourceExcludes: getState.sourceExcludes,
+          response,
+        };
+      } else {
+        content = {
+          type: "search",
+          indexName: selectedIndexName,
+          query,
+          response,
+        };
+      }
+
       return {
         id: collectionId,
         type: "elasticsearch",
         name: existing?.name ?? `${cluster?.name ?? "No cluster"} / ${selectedIndexName ?? "No index"}`,
-        content: {
-          type: "search",
-          clusterId: cluster?.id,
-          clusterName: cluster?.name,
-          indexName: selectedIndexName,
-          query,
-          response,
-        },
+        content,
         createdAt: existing?.createdAt ?? Date.now(),
         updatedAt: Date.now(),
       };
-    }, [cluster, selectedIndexName, query, response, collectionId, collections.byId]);
+    }, [cluster, selectedIndexName, query, response, collectionId, collections.byId, operationType, operationState]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: onStateChange is intentionally excluded to prevent infinite loops
     React.useEffect(() => {
       // Only trigger onStateChange after initialization is complete
       if (!isInitialized) return;
-      onStateChange?.({
-        clusterId: cluster?.id,
-        clusterName: cluster?.name,
-        operation: {
+
+      let operation: ElasticsearchOperationState;
+      if (operationType === "search") {
+        operation = {
           type: "search",
           indexName: selectedIndexName,
           query,
           response,
-        },
+        };
+      } else if (operationType === "get") {
+        const getState = operationState as ElasticsearchGetOperationState;
+        operation = {
+          type: "get",
+          clusterId: cluster?.id,
+          clusterName: cluster?.name,
+          indexName: selectedIndexName,
+          documentId: getState.documentId,
+          routing: getState.routing,
+          preference: getState.preference,
+          realtime: getState.realtime,
+          refresh: getState.refresh,
+          version: getState.version,
+          versionType: getState.versionType,
+          storedFields: getState.storedFields,
+          sourceIncludes: getState.sourceIncludes,
+          sourceExcludes: getState.sourceExcludes,
+          response,
+        };
+      } else {
+        operation = {
+          type: "search",
+          indexName: selectedIndexName,
+          query,
+          response,
+        };
+      }
+
+      onStateChange?.({
+        clusterId: cluster?.id,
+        clusterName: cluster?.name,
+        operation,
         collectionId,
       });
-    }, [isInitialized, cluster, selectedIndexName, query, response, collectionId]);
+    }, [isInitialized, cluster, selectedIndexName, query, response, collectionId, operationType, operationState]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: initialState properties are intentionally excluded as this should only run once on mount when clusters load
     React.useEffect(() => {
@@ -129,14 +231,22 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
         // TODO: handle case when initialCluster is not found
         setCluster(initialCluster);
       }
-      if (initialState?.operation?.indexName) {
-        setSelectedIndexName(initialState.operation.indexName);
-      }
-      if (initialState?.operation?.query) {
-        setQuery(initialState.operation.query);
-      }
-      if (initialState?.operation?.response) {
-        setResponse(initialState.operation.response);
+      if (initialState?.operation) {
+        const operation = initialState.operation;
+        setOperationType(operation.type);
+        if (operation.indexName) {
+          setSelectedIndexName(operation.indexName);
+        }
+        if (operation.type === "search") {
+          if (operation.query) {
+            setQuery(operation.query);
+          }
+        } else if (operation.type === "get") {
+          setOperationState(operation);
+        }
+        if (operation.response) {
+          setResponse(operation.response);
+        }
       }
       setIsInitialized(true);
     }, [isInitialized, clusters]);
@@ -195,6 +305,42 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [composedQuery, selectedIndexName, elasticsearch.search]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
+    const handleGet = React.useCallback(() => {
+      if (!cluster || !selectedIndexName) return;
+      (async () => {
+        try {
+          const getState = operationState as ElasticsearchGetOperationState;
+          if (!getState.documentId) {
+            toast("Document ID is required.", {
+              description: "Please enter a document ID to retrieve.",
+            });
+            return;
+          }
+
+          const sourceIncludes = [...(getState.sourceIncludes ?? []), ...selectedFields];
+
+          const response = await elasticsearch.getDocument(cluster, selectedIndexName, getState.documentId, {
+            routing: getState.routing,
+            realtime: getState.realtime,
+            refresh: getState.refresh,
+            preference: getState.preference,
+            version: getState.version,
+            versionType: getState.versionType,
+            storedFields: getState.storedFields,
+            _source: sourceIncludes.length > 0 ? sourceIncludes : undefined,
+            _sourceExcludes: getState.sourceExcludes,
+          });
+          setResponse(JSON.stringify(response, null, 2));
+        } catch (error) {
+          toast("Failed to get document.", {
+            description: error instanceof Error ? error.message : String(error),
+          });
+          console.error("Error getting document:", error);
+        }
+      })();
+    }, [cluster, selectedIndexName, operationState, selectedFields, elasticsearch.getDocument]);
+
     const handleCopyQueryToClipboard = React.useCallback(() => {
       const textToCopy =
         editorSettings.clipboardFormat === "json" ? JSON.stringify(JSON5.parse(query), null, 2) : query;
@@ -235,6 +381,39 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       [selectedIndex],
     );
 
+    const renderForm = () => {
+      if (operationType === "search") {
+        return (
+          <QueryEditor
+            query={query}
+            querySchemas={querySchemas}
+            fields={fields}
+            isLoading={elasticsearch.isLoading}
+            isRunDisabled={!selectedIndex}
+            isCopied={clipboardForQuery.isCopied}
+            onQueryChange={setQuery}
+            onFieldsSelectionChange={setSelectedFields}
+            onRun={handleSearch}
+            onCopy={handleCopyQueryToClipboard}
+          />
+        );
+      }
+      if (operationType === "get") {
+        return (
+          <GetForm
+            state={operationState as Partial<ElasticsearchGetOperationState>}
+            fields={fields}
+            isLoading={elasticsearch.isLoading}
+            isRunDisabled={!cluster || !selectedIndexName}
+            onStateChange={setOperationState}
+            onFieldsSelectionChange={setSelectedFields}
+            onRun={handleGet}
+          />
+        );
+      }
+      return null;
+    };
+
     return (
       <div {...props}>
         <div className="flex flex-col gap-1 h-full w-full">
@@ -247,23 +426,14 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
             saveDialogOpen={saveDialogOpen}
             isSaved={collections.isSaved}
             isLoadingIndices={elasticsearch.isLoading}
+            operationType={operationType}
             onClusterChange={setCluster}
             onIndexChange={setSelectedIndexName}
             onSaveDialogOpenChange={setSaveDialogOpen}
+            onOperationTypeChange={setOperationType}
           />
           <PanelGroup direction="horizontal" className="w-full h-full flex-1 min-h-0">
-            <QueryEditor
-              query={query}
-              querySchemas={querySchemas}
-              fields={fields}
-              isLoading={elasticsearch.isLoading}
-              isRunDisabled={!selectedIndex}
-              isCopied={clipboardForQuery.isCopied}
-              onQueryChange={setQuery}
-              onFieldsSelectionChange={setSelectedFields}
-              onRun={handleSearch}
-              onCopy={handleCopyQueryToClipboard}
-            />
+            <Panel className="h-full bg-white/40 p-3 rounded-lg shadow-lg">{renderForm()}</Panel>
             <PanelResizeHandle />
             <Panel>
               <ResponseViewer response={response} />

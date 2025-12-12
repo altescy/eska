@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import type { Cluster } from "@/types/cluster";
 import type { Collection } from "@/types/collection";
-import type { ElasticsearchGetIndicesResponse } from "@/types/elasticsearch";
+import type { ElasticsearchGetIndicesResponse, ElasticsearchOperation } from "@/types/elasticsearch";
 
 import { SaveCollectionDialog } from "./SaveCollectionDialog";
 
@@ -25,9 +25,11 @@ export interface PlaygroundToolbarProps {
   saveDialogOpen: boolean;
   isSaved: boolean;
   isLoadingIndices: boolean;
+  operationType: ElasticsearchOperation;
   onClusterChange: (cluster: Cluster | undefined) => void;
   onIndexChange: (indexName: string | undefined) => void;
   onSaveDialogOpenChange: (open: boolean) => void;
+  onOperationTypeChange: (type: ElasticsearchOperation) => void;
 }
 
 export const PlaygroundToolbar = ({
@@ -39,9 +41,11 @@ export const PlaygroundToolbar = ({
   saveDialogOpen,
   isSaved,
   isLoadingIndices,
+  operationType,
   onClusterChange,
   onIndexChange,
   onSaveDialogOpenChange,
+  onOperationTypeChange,
 }: PlaygroundToolbarProps) => {
   return (
     <div className="h-fit w-full shrink-0 flex gap-1">
@@ -57,7 +61,7 @@ export const PlaygroundToolbar = ({
         onSelectItem={(selected) => onClusterChange(clusters.find((c) => c.id === selected?.key))}
         className="w-[200px] shrink-0 bg-white/40 rounded-l-lg overflow-hidden"
       />
-      <Select defaultValue="search">
+      <Select value={operationType} onValueChange={onOperationTypeChange}>
         <SelectTrigger className="w-[120px] shrink-0 border-none bg-white/40 rounded-none rounded-r-none">
           <SelectValue placeholder="Select operation" />
         </SelectTrigger>
@@ -65,6 +69,7 @@ export const PlaygroundToolbar = ({
           <SelectGroup>
             <SelectLabel>Operation</SelectLabel>
             <SelectItem value="search">SEARCH</SelectItem>
+            <SelectItem value="get">GET</SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>
