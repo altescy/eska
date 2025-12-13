@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import type { ElasticsearchIndexMapping } from "@/types/elasticsearch";
 
-export interface SchemaCache {
+export interface Schemas {
   [indexName: string]: {
     schema: JSONSchema;
     mapping: ElasticsearchIndexMapping;
@@ -9,4 +9,4 @@ export interface SchemaCache {
   };
 }
 
-export const schemaCacheAtom = atom<SchemaCache>({});
+export const schemasAtom = atom<Schemas>({});

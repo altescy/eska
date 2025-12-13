@@ -2,7 +2,7 @@ import type { Monaco } from "@monaco-editor/react";
 import { useAtom } from "jotai";
 import type * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import { useCallback, useEffect, useRef } from "react";
-import { schemaCacheAtom } from "@/atoms/schemaCache";
+import { schemasAtom } from "@/atoms/schemas";
 import { generateElasticsearchQuerySchema } from "@/lib/elasticsearch";
 import type { ElasticsearchIndexMapping } from "@/types/elasticsearch";
 
@@ -13,32 +13,32 @@ export interface ModelInfo {
 
 export const useMonacoModels = (monaco: Monaco | null) => {
   const modelsRef = useRef<Map<string, MonacoAPI.editor.ITextModel>>(new Map());
-  const [schemaCache, setSchemaCache] = useAtom(schemaCacheAtom);
+  const [schemas, setSchemas] = useAtom(schemasAtom);
   const schemasRegisteredRef = useRef(false);
 
   // Generate or retrieve cached schema
   const getOrCreateSchema = useCallback(
     (indexName: string, mapping: ElasticsearchIndexMapping) => {
-      if (schemaCache[indexName]) {
-        return schemaCache[indexName].schema;
+      if (schemas[indexName]) {
+        return schemas[indexName].schema;
       }
 
       const schema = generateElasticsearchQuerySchema(mapping);
-      setSchemaCache((prev) => ({
+      setSchemas((prev) => ({
         ...prev,
         [indexName]: { schema, mapping, timestamp: Date.now() },
       }));
 
       return schema;
     },
-    [schemaCache, setSchemaCache],
+    [schemas, setSchemas],
   );
 
   // Update Monaco's global schema configuration
   const updateMonacoSchemas = useCallback(() => {
     if (!monaco) return;
 
-    const schemas = Object.entries(schemaCache).map(([indexName, { schema }]) => ({
+    const schemaConfigs = Object.entries(schemas).map(([indexName, { schema }]) => ({
       uri: `http://eska/schema-${indexName}.json`,
       fileMatch: [`**/tabs/*-${indexName}.json`],
       schema,
@@ -48,18 +48,18 @@ export const useMonacoModels = (monaco: Monaco | null) => {
       validate: true,
       allowComments: true,
       trailingCommas: "ignore",
-      schemas,
+      schemas: schemaConfigs,
     });
 
     schemasRegisteredRef.current = true;
-  }, [monaco, schemaCache]);
+  }, [monaco, schemas]);
 
   // Update schemas whenever cache changes
   useEffect(() => {
-    if (monaco && Object.keys(schemaCache).length > 0) {
+    if (monaco && Object.keys(schemas).length > 0) {
       updateMonacoSchemas();
     }
-  }, [monaco, schemaCache, updateMonacoSchemas]);
+  }, [monaco, schemas, updateMonacoSchemas]);
 
   // Create or update a model for a specific tab
   const getOrCreateModel = useCallback(
