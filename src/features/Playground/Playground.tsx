@@ -42,6 +42,7 @@ const DEFAULT_QUERY = `{
 
 export interface PlaygroundProps extends React.HTMLAttributes<HTMLDivElement> {
   collectionId: string;
+  tabId: string;
   initialState?: PlaygroundState;
   onStateChange?: (state: PlaygroundState) => void;
 }
@@ -51,7 +52,7 @@ export interface PlaygroundHandler {
 }
 
 export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
-  ({ collectionId, initialState, onStateChange, hidden, ...props }, ref) => {
+  ({ collectionId, tabId, initialState, onStateChange, hidden, ...props }, ref) => {
     const [isInitialized, setIsInitialized] = React.useState(false);
     const [operationType, setOperationType] = React.useState<ElasticsearchOperation>("search");
     const [operationState, setOperationState] = React.useState<Partial<ElasticsearchOperationState>>({});
@@ -546,6 +547,9 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       if (operationType === "search") {
         return (
           <QueryEditor
+            tabId={tabId}
+            indexName={selectedIndexName}
+            indexMapping={selectedIndex?.mappings}
             query={query}
             querySchemas={querySchemas}
             fields={fields}

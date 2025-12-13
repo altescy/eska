@@ -45,6 +45,10 @@ export interface EditorProps {
   actions?: MonacoAPI.editor.IActionDescriptor[];
   onChange?: (value: string | undefined) => void;
   lineNumbers?: "on" | "off" | "relative" | "interval";
+  // NEW: Optional model to use instead of value-based editing
+  model?: MonacoAPI.editor.ITextModel;
+  // NEW: Callback to get Monaco instance
+  onMonacoMount?: (monaco: Monaco) => void;
 }
 
 export interface EditorHandle {
@@ -52,14 +56,18 @@ export interface EditorHandle {
 }
 
 export const Editor = React.forwardRef<EditorHandle, EditorProps>(
-  ({ language, value, readOnly, schemas, actions, onChange, lineNumbers }, ref) => {
+  ({ language, value, readOnly, schemas, actions, onChange, lineNumbers, model, onMonacoMount }, ref) => {
     const [editor, setEditor] = React.useState<MonacoAPI.editor.IStandaloneCodeEditor | null>(null);
     const [monaco, setMonaco] = React.useState<Monaco | null>(null);
     const [editorSettings] = useAtom(editorSettingsAtom);
 
-    const handleEditorWillMount = React.useCallback((monacoInstance: Monaco) => {
-      setMonaco(monacoInstance);
-    }, []);
+    const handleEditorWillMount = React.useCallback(
+      (monacoInstance: Monaco) => {
+        setMonaco(monacoInstance);
+        onMonacoMount?.(monacoInstance);
+      },
+      [onMonacoMount],
+    );
 
     const handlEditorDidMount = React.useCallback((editorInstance: MonacoAPI.editor.IStandaloneCodeEditor) => {
       setEditor(editorInstance);
@@ -75,8 +83,19 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(
       [editor],
     );
 
+    // Set model if provided
     React.useEffect(() => {
-      if (schemas) {
+      if (editor && model) {
+        const currentModel = editor.getModel();
+        if (currentModel !== model) {
+          editor.setModel(model);
+        }
+      }
+    }, [editor, model]);
+
+    // Only configure schemas if not using model-based approach
+    React.useEffect(() => {
+      if (schemas && !model) {
         monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
           validate: true,
           allowComments: true,
@@ -84,7 +103,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(
           schemas: schemas,
         });
       }
-    }, [monaco, schemas]);
+    }, [monaco, schemas, model]);
 
     React.useEffect(() => {
       if (editor && actions) {
@@ -125,7 +144,7 @@ export const Editor = React.forwardRef<EditorHandle, EditorProps>(
         theme="eska"
         width="100%"
         height="100%"
-        value={value}
+        value={model ? undefined : value}
         defaultLanguage={language}
         beforeMount={handleEditorWillMount}
         onMount={handlEditorDidMount}
