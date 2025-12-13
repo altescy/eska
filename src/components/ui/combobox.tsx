@@ -1,4 +1,3 @@
-import { clsx } from "clsx";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -45,8 +44,11 @@ export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ..
             <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className={clsx("p-0 overflow-hidden", triggerWidth ? `w-[${triggerWidth}px]` : "w-full")}>
-          <Command className={clsx(triggerWidth ? `w-[${triggerWidth}px]` : "w-full")}>
+        <PopoverContent
+          className="p-0 overflow-hidden"
+          style={{ width: triggerWidth ? `${triggerWidth}px` : undefined }}
+        >
+          <Command style={{ width: triggerWidth ? `${triggerWidth}px` : undefined }}>
             <CommandInput className="w-full" placeholder="Search item..." />
             <CommandList className="overflow-auto w-full">
               <CommandEmpty>No item found.</CommandEmpty>
