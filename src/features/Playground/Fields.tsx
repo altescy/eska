@@ -282,13 +282,32 @@ export const Fields = ({ fields, disabled = false, onSelectionChange, ...props }
     }
 
     const criteria = parseFilterQuery(query);
-    const result: Record<string, ElasticsearchField> = {};
+    const matchedEntries: Array<[string, ElasticsearchField, number]> = [];
 
     for (const [name, field] of Object.entries(fieldsToFilter)) {
       const isSelected = selectedFields.includes(name);
       if (matchesFilter(name, field, isSelected, criteria)) {
-        result[name] = field;
+        // Calculate match ratio for text queries
+        let matchRatio = 0;
+        if (criteria.textQuery) {
+          const lowerName = name.toLowerCase();
+          const queryLength = criteria.textQuery.length;
+          const nameLength = lowerName.length;
+          // Higher ratio means better match (shorter field name relative to query)
+          matchRatio = queryLength / nameLength;
+        }
+        matchedEntries.push([name, field, matchRatio]);
       }
+    }
+
+    // Sort by match ratio if there's a text query (higher ratio = better match = comes first)
+    if (criteria.textQuery) {
+      matchedEntries.sort((a, b) => b[2] - a[2]);
+    }
+
+    const result: Record<string, ElasticsearchField> = {};
+    for (const [name, field] of matchedEntries) {
+      result[name] = field;
     }
 
     return result;
