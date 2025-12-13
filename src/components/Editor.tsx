@@ -45,9 +45,7 @@ export interface EditorProps {
   actions?: MonacoAPI.editor.IActionDescriptor[];
   onChange?: (value: string | undefined) => void;
   lineNumbers?: "on" | "off" | "relative" | "interval";
-  // NEW: Optional model to use instead of value-based editing
   model?: MonacoAPI.editor.ITextModel;
-  // NEW: Callback to get Monaco instance
   onMonacoMount?: (monaco: Monaco) => void;
 }
 
