@@ -46,9 +46,13 @@ export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ..
         </PopoverTrigger>
         <PopoverContent
           className="p-0 overflow-hidden"
-          style={{ width: triggerWidth ? `${triggerWidth}px` : undefined }}
+          style={{
+            width: triggerWidth ? `${triggerWidth}px` : undefined,
+            minWidth: triggerWidth ? `${triggerWidth}px` : undefined,
+            maxWidth: "min(500px, 90vw)",
+          }}
         >
-          <Command style={{ width: triggerWidth ? `${triggerWidth}px` : undefined }}>
+          <Command>
             <CommandInput className="w-full" placeholder="Search item..." />
             <CommandList className="overflow-auto w-full">
               <CommandEmpty>No item found.</CommandEmpty>
@@ -69,10 +73,14 @@ export function Combobox({ items = [], placeholder, onSelectItem, initialKey, ..
                       }
                     }}
                   >
-                    <CheckIcon className={cn("mr-2 h-4 w-4", key === item.key ? "opacity-100" : "opacity-0")} />
-                    <div>
-                      {item.label}
-                      {item.details && <div className="mt-1">{item.details}</div>}
+                    <CheckIcon
+                      className={cn("mr-2 h-4 w-4 shrink-0", key === item.key ? "opacity-100" : "opacity-0")}
+                    />
+                    <div className="flex-1 overflow-hidden">
+                      <div className="whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</div>
+                      {item.details && (
+                        <div className="mt-1 whitespace-nowrap overflow-hidden text-ellipsis">{item.details}</div>
+                      )}
                     </div>
                   </CommandItem>
                 ))}
