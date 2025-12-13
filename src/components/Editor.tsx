@@ -23,6 +23,7 @@ const getEditorOptions = (settings: {
   automaticLayout: true,
   stickyScroll: { enabled: false },
   lineDecorationsWidth: 0,
+  fixedOverflowWidgets: true,
   scrollbar: {
     vertical: "auto",
     horizontal: "auto",
