@@ -8,8 +8,8 @@ export interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 export const Settings = ({ ...props }: SettingsProps) => {
   return (
     <div {...props}>
-      <Tabs defaultValue="editor" className="w-full h-full text-gray-800">
-        <TabsList className="bg-gray-200/50 rounded-md w-full">
+      <Tabs defaultValue="editor" className="w-full h-full text-gray-800 flex flex-col">
+        <TabsList className="bg-gray-200/50 rounded-md w-full shrink-0">
           <TabsTrigger value="editor" className="flex-1">
             Editor
           </TabsTrigger>
@@ -17,10 +17,10 @@ export const Settings = ({ ...props }: SettingsProps) => {
             Data
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="editor" className="mt-4 space-y-4">
+        <TabsContent value="editor" className="mt-4 space-y-4 overflow-y-auto flex-1">
           <EditorSettings />
         </TabsContent>
-        <TabsContent value="data" className="mt-4 space-y-4">
+        <TabsContent value="data" className="mt-4 space-y-4 overflow-y-auto flex-1">
           <DataSettings />
         </TabsContent>
       </Tabs>
