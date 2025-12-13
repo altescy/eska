@@ -119,6 +119,24 @@ export function generateElasticsearchQuerySchema(mapping?: ElasticsearchIndexMap
           },
         ],
       },
+      script_fields: {
+        type: "object",
+        additionalProperties: {
+          type: "object",
+          properties: {
+            script: {
+              oneOf: [{ type: "string" }, { $ref: "#/definitions/Script" }],
+            },
+          },
+          required: ["script"],
+          additionalProperties: false,
+        },
+      },
+      post_filter: { $ref: "#/definitions/QueryContainer" },
+      rescore: {
+        oneOf: [{ $ref: "#/definitions/Rescore" }, { type: "array", items: { $ref: "#/definitions/Rescore" } }],
+      },
+      suggest: { $ref: "#/definitions/Suggest" },
     },
     required: ["query"],
     additionalProperties: false,
@@ -1326,6 +1344,107 @@ export function generateElasticsearchQuerySchema(mapping?: ElasticsearchIndexMap
             oneOf: [{ type: "boolean" }, { type: "string" }, { type: "array", items: { type: "string" } }],
           },
         },
+        additionalProperties: false,
+      },
+      Rescore: {
+        type: "object",
+        properties: {
+          window_size: { type: "integer", minimum: 1 },
+          query: {
+            type: "object",
+            properties: {
+              rescore_query: { $ref: "#/definitions/QueryContainer" },
+              query_weight: { type: "number", minimum: 0 },
+              rescore_query_weight: { type: "number", minimum: 0 },
+              score_mode: {
+                type: "string",
+                enum: ["total", "multiply", "avg", "max", "min"],
+              },
+            },
+            required: ["rescore_query"],
+            additionalProperties: false,
+          },
+        },
+        required: ["query"],
+        additionalProperties: false,
+      },
+      Suggest: {
+        type: "object",
+        properties: {
+          text: { type: "string" },
+        },
+        additionalProperties: {
+          type: "object",
+          properties: {
+            text: { type: "string" },
+            term: { $ref: "#/definitions/TermSuggester" },
+            phrase: { $ref: "#/definitions/PhraseSuggester" },
+            completion: { $ref: "#/definitions/CompletionSuggester" },
+          },
+          additionalProperties: false,
+        },
+      },
+      TermSuggester: {
+        type: "object",
+        properties: {
+          field: { type: "string" },
+          size: { type: "integer", minimum: 1 },
+          suggest_mode: {
+            type: "string",
+            enum: ["missing", "popular", "always"],
+          },
+          max_edits: { type: "integer", minimum: 1, maximum: 2 },
+          prefix_length: { type: "integer", minimum: 0 },
+          min_word_length: { type: "integer", minimum: 1 },
+          min_doc_freq: { type: "number", minimum: 0 },
+          max_term_freq: { type: "number", minimum: 0 },
+        },
+        required: ["field"],
+        additionalProperties: false,
+      },
+      PhraseSuggester: {
+        type: "object",
+        properties: {
+          field: { type: "string" },
+          size: { type: "integer", minimum: 1 },
+          gram_size: { type: "integer", minimum: 1 },
+          confidence: { type: "number", minimum: 0 },
+          max_errors: { type: "number", minimum: 0 },
+          collate: {
+            type: "object",
+            properties: {
+              query: {
+                type: "object",
+                properties: {
+                  source: { type: "string" },
+                },
+              },
+              prune: { type: "boolean" },
+            },
+          },
+        },
+        required: ["field"],
+        additionalProperties: false,
+      },
+      CompletionSuggester: {
+        type: "object",
+        properties: {
+          field: { type: "string" },
+          size: { type: "integer", minimum: 1 },
+          skip_duplicates: { type: "boolean" },
+          fuzzy: {
+            type: "object",
+            properties: {
+              fuzziness: { oneOf: [{ type: "integer" }, { type: "string" }] },
+              transpositions: { type: "boolean" },
+              min_length: { type: "integer", minimum: 1 },
+              prefix_length: { type: "integer", minimum: 0 },
+              unicode_aware: { type: "boolean" },
+            },
+          },
+          contexts: { type: "object" },
+        },
+        required: ["field"],
         additionalProperties: false,
       },
     },

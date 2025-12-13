@@ -42,6 +42,55 @@ describe("generateElasticsearchQuerySchema", () => {
     expect(schema.properties).toHaveProperty("track_total_hits");
   });
 
+  it("should include script_fields parameter", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.properties).toHaveProperty("script_fields");
+    const scriptFields = schema.properties?.script_fields;
+
+    if (scriptFields && typeof scriptFields === "object" && "type" in scriptFields) {
+      expect(scriptFields.type).toBe("object");
+      expect(scriptFields).toHaveProperty("additionalProperties");
+    }
+  });
+
+  it("should include post_filter parameter", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.properties).toHaveProperty("post_filter");
+    const postFilter = schema.properties?.post_filter;
+
+    if (postFilter && typeof postFilter === "object" && "$ref" in postFilter) {
+      expect(postFilter.$ref).toBe("#/definitions/QueryContainer");
+    }
+  });
+
+  it("should include rescore parameter", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.properties).toHaveProperty("rescore");
+    const rescore = schema.properties?.rescore;
+
+    if (rescore && typeof rescore === "object" && "oneOf" in rescore && Array.isArray(rescore.oneOf)) {
+      expect(rescore.oneOf).toHaveLength(2);
+      const firstOption = rescore.oneOf[0];
+      if (firstOption && typeof firstOption === "object" && "$ref" in firstOption) {
+        expect(firstOption.$ref).toBe("#/definitions/Rescore");
+      }
+    }
+  });
+
+  it("should include suggest parameter", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.properties).toHaveProperty("suggest");
+    const suggest = schema.properties?.suggest;
+
+    if (suggest && typeof suggest === "object" && "$ref" in suggest) {
+      expect(suggest.$ref).toBe("#/definitions/Suggest");
+    }
+  });
+
   it("should include all query types in QueryContainer", () => {
     const schema = generateElasticsearchQuerySchema();
     const queryContainer = schema.definitions?.QueryContainer;
@@ -72,6 +121,109 @@ describe("generateElasticsearchQuerySchema", () => {
     expect(schema.definitions).toHaveProperty("TermsAggregation");
     expect(schema.definitions).toHaveProperty("DateHistogramAggregation");
     expect(schema.definitions).toHaveProperty("MetricAggregation");
+  });
+
+  it("should have Rescore definition with required properties", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.definitions).toHaveProperty("Rescore");
+    const rescore = schema.definitions?.Rescore;
+
+    if (rescore && typeof rescore === "object" && "properties" in rescore) {
+      expect(rescore.properties).toHaveProperty("window_size");
+      expect(rescore.properties).toHaveProperty("query");
+
+      if ("required" in rescore && Array.isArray(rescore.required)) {
+        expect(rescore.required).toContain("query");
+      }
+    }
+  });
+
+  it("should have Suggest definition with suggester types", () => {
+    const schema = generateElasticsearchQuerySchema();
+
+    expect(schema.definitions).toHaveProperty("Suggest");
+    expect(schema.definitions).toHaveProperty("TermSuggester");
+    expect(schema.definitions).toHaveProperty("PhraseSuggester");
+    expect(schema.definitions).toHaveProperty("CompletionSuggester");
+
+    const suggest = schema.definitions?.Suggest;
+    if (suggest && typeof suggest === "object" && "properties" in suggest) {
+      expect(suggest.properties).toHaveProperty("text");
+    }
+  });
+
+  it("should have TermSuggester with field property", () => {
+    const schema = generateElasticsearchQuerySchema();
+    const termSuggester = schema.definitions?.TermSuggester;
+
+    if (termSuggester && typeof termSuggester === "object" && "properties" in termSuggester) {
+      expect(termSuggester.properties).toHaveProperty("field");
+      expect(termSuggester.properties).toHaveProperty("size");
+      expect(termSuggester.properties).toHaveProperty("suggest_mode");
+
+      if ("required" in termSuggester && Array.isArray(termSuggester.required)) {
+        expect(termSuggester.required).toContain("field");
+      }
+    }
+  });
+
+  it("should have PhraseSuggester with field property", () => {
+    const schema = generateElasticsearchQuerySchema();
+    const phraseSuggester = schema.definitions?.PhraseSuggester;
+
+    if (phraseSuggester && typeof phraseSuggester === "object" && "properties" in phraseSuggester) {
+      expect(phraseSuggester.properties).toHaveProperty("field");
+      expect(phraseSuggester.properties).toHaveProperty("gram_size");
+      expect(phraseSuggester.properties).toHaveProperty("confidence");
+
+      if ("required" in phraseSuggester && Array.isArray(phraseSuggester.required)) {
+        expect(phraseSuggester.required).toContain("field");
+      }
+    }
+  });
+
+  it("should have CompletionSuggester with field and fuzzy properties", () => {
+    const schema = generateElasticsearchQuerySchema();
+    const completionSuggester = schema.definitions?.CompletionSuggester;
+
+    if (completionSuggester && typeof completionSuggester === "object" && "properties" in completionSuggester) {
+      expect(completionSuggester.properties).toHaveProperty("field");
+      expect(completionSuggester.properties).toHaveProperty("fuzzy");
+      expect(completionSuggester.properties).toHaveProperty("skip_duplicates");
+
+      if ("required" in completionSuggester && Array.isArray(completionSuggester.required)) {
+        expect(completionSuggester.required).toContain("field");
+      }
+    }
+  });
+
+  it("should have Script definition that supports string and object forms", () => {
+    const schema = generateElasticsearchQuerySchema();
+    const script = schema.definitions?.Script;
+
+    expect(script).toBeDefined();
+    if (script && typeof script === "object" && "oneOf" in script && Array.isArray(script.oneOf)) {
+      expect(script.oneOf.length).toBeGreaterThanOrEqual(2);
+
+      // Should support string form
+      const hasStringForm = script.oneOf.some(
+        (item) => typeof item === "object" && item !== null && "type" in item && item.type === "string",
+      );
+      expect(hasStringForm).toBe(true);
+
+      // Should support object form with source
+      const hasObjectForm = script.oneOf.some(
+        (item) =>
+          typeof item === "object" &&
+          item !== null &&
+          "properties" in item &&
+          item.properties &&
+          typeof item.properties === "object" &&
+          "source" in item.properties,
+      );
+      expect(hasObjectForm).toBe(true);
+    }
   });
 });
 
