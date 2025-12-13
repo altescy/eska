@@ -1,10 +1,11 @@
-import { Play } from "lucide-react";
+import { Info, Play } from "lucide-react";
 import { useEffect, useId } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ElasticsearchField, ElasticsearchGetOperationState } from "@/types/elasticsearch";
 
 import { Fields } from "../Fields";
@@ -128,8 +129,14 @@ export const GetForm = ({
 
             {/* Source Excludes */}
             <div className="space-y-2">
-              <label htmlFor={sourceExcludesId} className="text-sm font-medium">
-                _source excludes (comma-separated)
+              <label htmlFor={sourceExcludesId} className="text-sm font-medium flex items-center gap-1.5">
+                _source excludes
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>Comma-separated list of fields to exclude from response</TooltipContent>
+                </Tooltip>
               </label>
               <Input
                 id={sourceExcludesId}
@@ -149,8 +156,14 @@ export const GetForm = ({
 
             {/* Stored Fields */}
             <div className="space-y-2">
-              <label htmlFor={storedFieldsId} className="text-sm font-medium">
-                Stored Fields (comma-separated)
+              <label htmlFor={storedFieldsId} className="text-sm font-medium flex items-center gap-1.5">
+                Stored Fields
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>Comma-separated list of stored fields to retrieve</TooltipContent>
+                </Tooltip>
               </label>
               <Input
                 id={storedFieldsId}

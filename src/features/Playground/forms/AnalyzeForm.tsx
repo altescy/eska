@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { Info, Play } from "lucide-react";
 import { useEffect, useId } from "react";
 import { Panel } from "react-resizable-panels";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ElasticsearchAnalyzeOperationState } from "@/types/elasticsearch";
 
 export interface AnalyzeFormProps {
@@ -105,8 +106,14 @@ export const AnalyzeForm = ({
 
           {/* Field (index-specific analyzer) */}
           <div className="space-y-2">
-            <label htmlFor={fieldId} className="text-sm font-medium">
-              Field (use field's analyzer)
+            <label htmlFor={fieldId} className="text-sm font-medium flex items-center gap-1.5">
+              Field
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Use the analyzer configured for this field</TooltipContent>
+              </Tooltip>
             </label>
             {fields && fields.length > 0 ? (
               <Combobox
@@ -145,8 +152,14 @@ export const AnalyzeForm = ({
 
           {/* Filter */}
           <div className="space-y-2">
-            <label htmlFor={filterId} className="text-sm font-medium">
-              Token Filters (comma-separated)
+            <label htmlFor={filterId} className="text-sm font-medium flex items-center gap-1.5">
+              Token Filters
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Comma-separated list of token filters</TooltipContent>
+              </Tooltip>
             </label>
             <Input
               id={filterId}
@@ -166,8 +179,14 @@ export const AnalyzeForm = ({
 
           {/* Char Filter */}
           <div className="space-y-2">
-            <label htmlFor={charFilterId} className="text-sm font-medium">
-              Character Filters (comma-separated)
+            <label htmlFor={charFilterId} className="text-sm font-medium flex items-center gap-1.5">
+              Character Filters
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Comma-separated list of character filters</TooltipContent>
+              </Tooltip>
             </label>
             <Input
               id={charFilterId}
@@ -187,8 +206,14 @@ export const AnalyzeForm = ({
 
           {/* Attributes */}
           <div className="space-y-2">
-            <label htmlFor={attributesId} className="text-sm font-medium">
-              Attributes (comma-separated)
+            <label htmlFor={attributesId} className="text-sm font-medium flex items-center gap-1.5">
+              Attributes
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Comma-separated list of token attributes to return</TooltipContent>
+              </Tooltip>
             </label>
             <Input
               id={attributesId}
@@ -213,8 +238,14 @@ export const AnalyzeForm = ({
               checked={state.explain ?? false}
               onCheckedChange={(checked) => handleChange("explain", checked)}
             />
-            <label htmlFor={explainId} className="text-sm font-medium">
-              Explain (detailed token information)
+            <label htmlFor={explainId} className="text-sm font-medium flex items-center gap-1.5">
+              Explain
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 text-gray-500 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>Include detailed token information</TooltipContent>
+              </Tooltip>
             </label>
           </div>
         </div>
