@@ -15,6 +15,7 @@ export const TabContent = ({ tabs, activeTabId, onUpdateTabState }: TabContentPr
       {tabs.map((tab) => (
         <Playground
           key={tab.id}
+          tabId={tab.id}
           collectionId={tab.state.collectionId}
           initialState={tab.state}
           className={clsx("w-full h-full min-h-0", activeTabId !== tab.id && "hidden")}

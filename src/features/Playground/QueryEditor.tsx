@@ -1,15 +1,20 @@
+import type { Monaco } from "@monaco-editor/react";
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Editor, type EditorHandle } from "@/components/Editor";
-import type { ElasticsearchField } from "@/types/elasticsearch";
+import { useMonacoModels } from "@/hooks/useMonacoModels";
+import type { ElasticsearchField, ElasticsearchIndexMapping } from "@/types/elasticsearch";
 
 import { Fields } from "./Fields";
 import { QueryActions } from "./QueryActions";
 
 export interface QueryEditorProps {
+  tabId: string;
+  indexName?: string;
+  indexMapping?: ElasticsearchIndexMapping;
   query: string;
-  querySchemas: MonacoAPI.languages.json.DiagnosticsOptions["schemas"];
+  querySchemas?: MonacoAPI.languages.json.DiagnosticsOptions["schemas"];
   fields?: Record<string, ElasticsearchField>;
   isLoading?: boolean;
   isRunDisabled?: boolean;
@@ -21,6 +26,9 @@ export interface QueryEditorProps {
 }
 
 export const QueryEditor = ({
+  tabId,
+  indexName,
+  indexMapping,
   query,
   querySchemas,
   fields,
@@ -33,6 +41,14 @@ export const QueryEditor = ({
   onCopy,
 }: QueryEditorProps) => {
   const queryEditorRef = React.useRef<EditorHandle>(null);
+  const [monaco, setMonaco] = React.useState<Monaco | null>(null);
+  const { getOrCreateModel } = useMonacoModels(monaco);
+
+  // Create or get model for this tab+index
+  const modelInfo = React.useMemo(() => {
+    if (!indexName || !indexMapping) return null;
+    return getOrCreateModel(tabId, indexName, query, indexMapping);
+  }, [tabId, indexName, indexMapping, query, getOrCreateModel]);
 
   const queryActions = React.useMemo(
     () => [
@@ -59,10 +75,12 @@ export const QueryEditor = ({
           <Editor
             ref={queryEditorRef}
             language="json"
-            schemas={querySchemas}
+            model={modelInfo?.model}
+            schemas={modelInfo ? undefined : querySchemas}
             actions={queryActions}
-            value={query}
+            value={modelInfo ? undefined : query}
             onChange={(value) => onQueryChange(value ?? "")}
+            onMonacoMount={(monacoInstance) => setMonaco(monacoInstance)}
           />
         </div>
         <QueryActions
