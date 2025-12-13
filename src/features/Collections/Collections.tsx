@@ -39,12 +39,7 @@ export const Collections = ({ ...props }: CollectionsProps) => {
           tab = tabs.newPlaygroundTab({
             clusterId: collection.content.clusterId,
             clusterName: collection.content.clusterName,
-            operation: {
-              type: collection.content.type,
-              indexName: collection.content.indexName,
-              query: collection.content.query,
-              response: collection.content.response,
-            },
+            operation: collection.content,
             collectionId: collection.id,
           });
           tab.title = collection.name;

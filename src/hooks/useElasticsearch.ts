@@ -5,9 +5,12 @@ import { buildElasticsearchHeaders, buildIndexCacheKey, buildUrlWithParams, quot
 import type { Cluster } from "@/types/cluster";
 import type {
   ElaseticsearchSearchResponse,
+  ElasticsearchAnalyzeResponse,
   ElasticsearchClusterHealthResponse,
   ElasticsearchErrorResponse,
   ElasticsearchGetIndicesResponse,
+  ElasticsearchGetResponse,
+  InfoType,
 } from "@/types/elasticsearch";
 
 export const useElasticsearch = () => {
@@ -118,5 +121,100 @@ export const useElasticsearch = () => {
     [request, cachedIndices, setCachedIndices],
   );
 
-  return { ping, health, search, getIndices, isLoading };
+  const getDocument = React.useCallback(
+    async (
+      cluster: Cluster,
+      index: string,
+      id: string,
+      options?: {
+        routing?: string;
+        preference?: string;
+        realtime?: boolean;
+        refresh?: boolean;
+        version?: number;
+        versionType?: string;
+        storedFields?: string[];
+        _source?: boolean | string[];
+        _sourceExcludes?: string[];
+      },
+    ): Promise<ElasticsearchGetResponse | ElasticsearchErrorResponse> => {
+      const params: Record<string, string | number | boolean> = {};
+      if (options?.routing) params.routing = options.routing;
+      if (options?.preference) params.preference = options.preference;
+      if (options?.realtime !== undefined) params.realtime = options.realtime;
+      if (options?.refresh !== undefined) params.refresh = options.refresh;
+      if (options?.version !== undefined) params.version = options.version;
+      if (options?.versionType) params.version_type = options.versionType;
+      if (options?.storedFields && options.storedFields.length > 0) {
+        params.stored_fields = options.storedFields.join(",");
+      }
+      if (options?._source === false) {
+        params._source = false;
+      } else if (Array.isArray(options?._source) && options._source.length > 0) {
+        params._source = options._source.join(",");
+      }
+      if (options?._sourceExcludes && options._sourceExcludes.length > 0) {
+        params._source_excludes = options._sourceExcludes.join(",");
+      }
+
+      return await request(cluster, "GET", `${quote(index)}/_doc/${quote(id)}`, { params });
+    },
+    [request],
+  );
+
+  const analyzeText = React.useCallback(
+    async (
+      cluster: Cluster,
+      index: string | undefined,
+      options: {
+        text: string;
+        analyzer?: string;
+        field?: string;
+        tokenizer?: string;
+        filter?: string[];
+        charFilter?: string[];
+        explain?: boolean;
+        attributes?: string[];
+      },
+    ): Promise<ElasticsearchAnalyzeResponse | ElasticsearchErrorResponse> => {
+      const body: Record<string, unknown> = {
+        text: options.text,
+      };
+      if (options.analyzer) body.analyzer = options.analyzer;
+      if (options.field) body.field = options.field;
+      if (options.tokenizer) body.tokenizer = options.tokenizer;
+      if (options.filter && options.filter.length > 0) body.filter = options.filter;
+      if (options.charFilter && options.charFilter.length > 0) body.char_filter = options.charFilter;
+      if (options.explain !== undefined) body.explain = options.explain;
+      if (options.attributes && options.attributes.length > 0) body.attributes = options.attributes;
+
+      const path = index ? `${quote(index)}/_analyze` : "/_analyze";
+      return await request(cluster, "POST", path, { body });
+    },
+    [request],
+  );
+
+  const getIndexInfo = React.useCallback(
+    async (cluster: Cluster, index: string, infoType: InfoType): Promise<JSONValue> => {
+      let path: string;
+      switch (infoType) {
+        case "mapping":
+          path = `${quote(index)}/_mapping`;
+          break;
+        case "settings":
+          path = `${quote(index)}/_settings`;
+          break;
+        case "aliases":
+          path = `${quote(index)}/_alias`;
+          break;
+        case "stats":
+          path = `${quote(index)}/_stats`;
+          break;
+      }
+      return await request(cluster, "GET", path);
+    },
+    [request],
+  );
+
+  return { ping, health, search, getIndices, getDocument, analyzeText, getIndexInfo, isLoading };
 };

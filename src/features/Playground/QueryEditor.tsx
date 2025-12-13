@@ -53,41 +53,39 @@ export const QueryEditor = ({
   }, []);
 
   return (
-    <Panel className="w-full h-full bg-white/40 p-3 rounded-lg shadow-lg">
-      <PanelGroup direction="vertical" className="w-full h-full">
-        <Panel className="w-full h-full flex gap-3 flex-1">
-          <div className="flex-1 min-w-0">
-            <Editor
-              ref={queryEditorRef}
-              language="json"
-              schemas={querySchemas}
-              actions={queryActions}
-              value={query}
-              onChange={(value) => onQueryChange(value ?? "")}
-            />
-          </div>
-          <QueryActions
-            onRun={onRun}
-            onFormat={handleFormat}
-            onCopy={onCopy}
-            isLoading={isLoading}
-            isRunDisabled={isRunDisabled}
-            isCopied={isCopied}
+    <PanelGroup direction="vertical" className="w-full h-full">
+      <Panel className="w-full h-full flex gap-3 flex-1">
+        <div className="flex-1 min-w-0">
+          <Editor
+            ref={queryEditorRef}
+            language="json"
+            schemas={querySchemas}
+            actions={queryActions}
+            value={query}
+            onChange={(value) => onQueryChange(value ?? "")}
           />
-        </Panel>
-        {fields && (
-          <>
-            <PanelResizeHandle />
-            <Panel className="w-full h-full">
-              <Fields
-                fields={fields}
-                className="w-full h-full overflow-hidden"
-                onSelectionChange={onFieldsSelectionChange}
-              />
-            </Panel>
-          </>
-        )}
-      </PanelGroup>
-    </Panel>
+        </div>
+        <QueryActions
+          onRun={onRun}
+          onFormat={handleFormat}
+          onCopy={onCopy}
+          isLoading={isLoading}
+          isRunDisabled={isRunDisabled}
+          isCopied={isCopied}
+        />
+      </Panel>
+      {fields && (
+        <>
+          <PanelResizeHandle />
+          <Panel className="w-full h-full">
+            <Fields
+              fields={fields}
+              className="w-full h-full overflow-hidden"
+              onSelectionChange={onFieldsSelectionChange}
+            />
+          </Panel>
+        </>
+      )}
+    </PanelGroup>
   );
 };

@@ -76,13 +76,25 @@ export interface ElasticsearchGetIndicesResponse {
   [index: string]: ElasticsearchIndex;
 }
 
-export type ElasticsearchOperation = "search";
+export interface ElasticsearchGetResponse<T = JSONValue> {
+  _index: string;
+  _id: string;
+  _version?: number;
+  _seq_no?: number;
+  _primary_term?: number;
+  found: boolean;
+  _source?: T;
+  _fields?: { [field: string]: JSONValue[] };
+  _routing?: string;
+}
+
+export type ElasticsearchOperation = "search" | "get" | "analyze" | "info";
 
 export interface BaseElasticsearchOperationState<Operation extends ElasticsearchOperation> {
   type: Operation;
 }
 
-export interface ElasticsearchSearchOperationState extends BaseOperationState<"search"> {
+export interface ElasticsearchSearchOperationState extends BaseElasticsearchOperationState<"search"> {
   type: "search";
   clusterId?: string;
   clusterName?: string;
@@ -91,4 +103,64 @@ export interface ElasticsearchSearchOperationState extends BaseOperationState<"s
   response?: string;
 }
 
-export type ElasticsearchOperationState = ElasticsearchSearchOperationState;
+export interface ElasticsearchGetOperationState extends BaseElasticsearchOperationState<"get"> {
+  type: "get";
+  clusterId?: string;
+  clusterName?: string;
+  indexName?: string;
+  documentId?: string;
+  routing?: string;
+  preference?: string;
+  realtime?: boolean;
+  refresh?: boolean;
+  version?: number;
+  versionType?: "internal" | "external" | "external_gte" | "force";
+  storedFields?: string[];
+  sourceIncludes?: string[];
+  sourceExcludes?: string[];
+  response?: string;
+}
+
+export interface ElasticsearchAnalyzeResponse {
+  tokens: Array<{
+    token: string;
+    start_offset: number;
+    end_offset: number;
+    type: string;
+    position: number;
+  }>;
+  detail?: JSONValue;
+}
+
+export interface ElasticsearchAnalyzeOperationState extends BaseElasticsearchOperationState<"analyze"> {
+  type: "analyze";
+  clusterId?: string;
+  clusterName?: string;
+  indexName?: string;
+  text?: string;
+  analyzer?: string;
+  field?: string;
+  tokenizer?: string;
+  filter?: string[];
+  charFilter?: string[];
+  explain?: boolean;
+  attributes?: string[];
+  response?: string;
+}
+
+export type InfoType = "mapping" | "settings" | "aliases" | "stats";
+
+export interface ElasticsearchInfoOperationState extends BaseElasticsearchOperationState<"info"> {
+  type: "info";
+  clusterId?: string;
+  clusterName?: string;
+  indexName?: string;
+  infoType?: InfoType;
+  response?: string;
+}
+
+export type ElasticsearchOperationState =
+  | ElasticsearchSearchOperationState
+  | ElasticsearchGetOperationState
+  | ElasticsearchAnalyzeOperationState
+  | ElasticsearchInfoOperationState;
