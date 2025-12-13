@@ -30,11 +30,13 @@ export const Clusters = ({ ...props }: ClustersProps) => {
   const [clusterToDelete, setClusterToDelete] = React.useState<Cluster>();
   const [isTestingConnection, setIsTestingConnection] = React.useState(false);
   const [connectionTestResult, setConnectionTestResult] = React.useState<"success" | "error" | null>(null);
+  const [isSaveDisabled, setIsSaveDisabled] = React.useState(false);
   const dialogRef = React.useRef<ClusterConfigHandler<Cluster>>(null);
   const elasticsearch = useElasticsearch();
 
   const handleNewCluster = () => {
     setSelectedCluster(undefined);
+    setIsSaveDisabled(true); // New cluster starts with empty name
     setOpen(true);
   };
 
@@ -49,6 +51,7 @@ export const Clusters = ({ ...props }: ClustersProps) => {
 
   const handleEditCluster = (cluster: Cluster) => {
     setSelectedCluster(cluster);
+    setIsSaveDisabled(false); // Existing cluster has a name
     setOpen(true);
   };
 
@@ -131,7 +134,11 @@ export const Clusters = ({ ...props }: ClustersProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[calc(90vh-12rem)] pr-2">
-            <ClusterConfig ref={dialogRef} initialCluster={selectedCluster} />
+            <ClusterConfig
+              ref={dialogRef}
+              initialCluster={selectedCluster}
+              onValidationChange={(isValid) => setIsSaveDisabled(!isValid)}
+            />
           </div>
           {connectionTestResult && (
             <div
@@ -156,7 +163,7 @@ export const Clusters = ({ ...props }: ClustersProps) => {
               </TooltipTrigger>
               <TooltipContent>Test connection to cluster</TooltipContent>
             </Tooltip>
-            <Button type="submit" onClick={handleSaveConfig}>
+            <Button type="submit" onClick={handleSaveConfig} disabled={isSaveDisabled}>
               Save
             </Button>
           </DialogFooter>

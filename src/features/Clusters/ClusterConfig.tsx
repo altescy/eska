@@ -13,19 +13,28 @@ import { SSHTunnelConfig, type SSHTunnelConfigHandler } from "./SSHTunnelConfig"
 
 export interface ClusterConfigHandler<T extends Cluster = Cluster> {
   getCluster: () => T | undefined;
+  isValid: () => boolean;
 }
 
 export interface ClusterConfigProps<T extends Cluster = Cluster> extends React.HTMLAttributes<HTMLDivElement> {
   initialCluster?: T;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export const ClusterConfig = React.forwardRef(
-  <T extends Cluster>({ initialCluster, ...props }: ClusterConfigProps<T>, ref: React.Ref<ClusterConfigHandler<T>>) => {
+  <T extends Cluster>(
+    { initialCluster, onValidationChange, ...props }: ClusterConfigProps<T>,
+    ref: React.Ref<ClusterConfigHandler<T>>,
+  ) => {
     const [clusterName, setClusterName] = React.useState(initialCluster?.name ?? "");
     const [tunnelType, setTunnelType] = React.useState<TunnelType>(initialCluster?.tunnel?.type ?? "none");
     const [authType, setAuthType] = React.useState<AuthType>(initialCluster?.auth.type ?? "noauth");
     const tunnelRef = React.useRef<NoneTunnelConfigHandler | KubectlTunnelConfigHandler | SSHTunnelConfigHandler>(null);
     const authRef = React.useRef<NoAuthConfigHandler | BasicAuthConfigHandler>(null);
+
+    React.useEffect(() => {
+      onValidationChange?.(clusterName.trim().length > 0);
+    }, [clusterName, onValidationChange]);
 
     React.useImperativeHandle(
       ref,
@@ -40,6 +49,9 @@ export const ClusterConfig = React.forwardRef(
             auth: auth,
             tunnel: tunnel,
           } as T;
+        },
+        isValid: () => {
+          return clusterName.trim().length > 0;
         },
       }),
       [clusterName, initialCluster],
