@@ -70,7 +70,7 @@ export const Collections = ({ ...props }: CollectionsProps) => {
   return (
     <div {...props}>
       <div className="w-full h-full flex flex-col">
-        <InputGroup className="mt-1 h-9 outline-none border-none bg-white/15 rounded-md">
+        <InputGroup className="mt-0.5 h-9 outline-none border-none bg-white/15 rounded-md">
           <InputGroupAddon>
             <ListFilter />
           </InputGroupAddon>

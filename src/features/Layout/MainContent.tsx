@@ -20,7 +20,7 @@ export const MainContent = ({ collectionPanelRef, onCollectionsCollapse }: MainC
         onCollapse={onCollectionsCollapse}
       >
         <div className="h-1 app-region-drag" />
-        <Collections className="w-full h-full flex-1 min-h-0 pl-1 pr-2" />
+        <Collections className="w-full h-full flex-1 min-h-0 pl-0 pr-2" />
       </Panel>
       <PanelResizeHandle />
       <Panel className="flex flex-col pt-0 pr-2 pb-2 w-full h-full min-h-0">

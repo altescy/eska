@@ -37,7 +37,7 @@ export const Sidebar = ({ openCollections, onToggleCollections }: SidebarProps) 
     };
   }, []);
   return (
-    <div className="pt-10 pb-2 w-[80px] shrink-0 h-full flex flex-col gap-2 items-center app-region-drag">
+    <div className="pt-10 pb-2 w-[77px] shrink-0 h-full flex flex-col gap-2 items-center app-region-drag">
       <Dialog>
         <Tooltip>
           <TooltipTrigger asChild>
