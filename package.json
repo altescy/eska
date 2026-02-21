@@ -57,7 +57,7 @@
     "jotai": "^2.16.0",
     "json5": "^2.2.3",
     "lucide-react": "^0.542.0",
-    "minimatch": "^10.1.1",
+    "minimatch": "^10.2.1",
     "monaco-editor": "^0.54.0",
     "monaco-vim": "^0.4.4",
     "monaco-yaml": "^5.4.0",
