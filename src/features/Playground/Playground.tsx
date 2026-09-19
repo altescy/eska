@@ -160,7 +160,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       }
     }, [query, selectedFields]);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: collections.byId is stable
     const collection = React.useMemo((): Collection => {
       let existing = collectionId ? collections.byId(collectionId) : undefined;
       if (existing?.type !== "elasticsearch") existing = undefined;
@@ -400,7 +399,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [composedQuery, selectedIndexName, elasticsearch.search]);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
     const handleGet = React.useCallback(() => {
       if (!cluster || !selectedIndexName) return;
       (async () => {
@@ -436,7 +434,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [cluster, selectedIndexName, operationState, selectedFields, elasticsearch.getDocument]);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
     const handleAnalyze = React.useCallback(() => {
       if (!cluster) return;
       (async () => {
@@ -469,7 +466,6 @@ export const Playground = React.forwardRef<PlaygroundHandler, PlaygroundProps>(
       })();
     }, [cluster, selectedIndexName, operationState, elasticsearch.analyzeText]);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: No need to include elasticsearch.
     const handleInfo = React.useCallback(() => {
       if (!cluster || !selectedIndexName) return;
       (async () => {
