@@ -12,13 +12,13 @@ cask "eska" do
     strategy :github_latest
   end
 
+  depends_on macos: :monterey
+
   app "Eska.app"
 
   # Remove quarantine attribute to allow running unsigned app
-  postflight do
-    system_command "/usr/bin/xattr",
-                   args: ["-dr", "com.apple.quarantine", "#{appdir}/Eska.app"],
-                   sudo: false
+  postflight_steps do
+    run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{appdir}}/Eska.app"]
   end
 
   zap trash: [

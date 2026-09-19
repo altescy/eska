@@ -85,7 +85,7 @@ The app is currently distributed without Apple Developer ID code signing. To all
    - `"hardenedRuntime": false` - Disable hardened runtime
    - `"gatekeeperAssess": false` - Skip Gatekeeper assessment
 
-2. **Cask formula** includes a `postflight` script that removes the quarantine attribute from the app after installation
+2. **Cask formula** includes a `postflight_steps` stanza that removes the quarantine attribute from the app after installation
 
 This allows Homebrew users to install and run the app without seeing "This app is damaged" warnings.
 
