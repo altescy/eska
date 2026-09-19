@@ -44,19 +44,23 @@ brew uninstall --zap --cask eska
 
 ## Updating the Formula
 
+This file is updated automatically -- do not edit `version` or `sha256` by hand.
+
 When releasing a new version:
 
 1. Update `version` in `package.json`
 2. Create and push a git tag (e.g., `v0.0.2`)
 3. Create a GitHub release with the tag
-4. Update the `version` in `Casks/eska.rb` to match
-5. Commit and push the updated Cask formula
 
-The GitHub Actions workflow will automatically build and upload the DMG file to the release.
+The `Release` workflow then builds and uploads the installers, and its
+`update-cask` job downloads the published DMG, computes its SHA256, writes both
+values into `eska.rb`, and commits the result to `main`. See
+[.github/RELEASE.md](../.github/RELEASE.md) for the full process.
 
-### Calculating SHA256 (Optional)
+### Calculating SHA256 by hand
 
-For better security, you can calculate and include the SHA256 checksum:
+Only needed if the `update-cask` job could not push (for example when `main` is
+protected):
 
 ```bash
 # Download the DMG from GitHub releases
@@ -65,8 +69,7 @@ wget https://github.com/altescy/eska/releases/download/v0.0.1/Eska-Mac-0.0.1-Ins
 # Calculate SHA256
 shasum -a 256 Eska-Mac-0.0.1-Installer.dmg
 
-# Update eska.rb
-# Replace `sha256 :no_check` with `sha256 "actual-hash-here"`
+# Then update `version` and `sha256` in eska.rb
 ```
 
 ## Notes
@@ -74,6 +77,7 @@ shasum -a 256 Eska-Mac-0.0.1-Installer.dmg
 - The repository is tapped as `altescy/eska`
 - The Cask file must be in the `Casks/` directory at the repository root
 - DMG files are automatically uploaded to GitHub Releases by the CI workflow
+- The Cask `version` and `sha256` are updated by the same workflow
 - Users will automatically get updates when they run `brew upgrade`
 
 ## Code Signing and Security

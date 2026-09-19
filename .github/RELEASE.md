@@ -8,6 +8,8 @@ When you create a new release on GitHub, the CI/CD pipeline will automatically:
 
 1. Build the Electron application for all platforms (macOS, Windows, Linux)
 2. Upload the built binaries as release assets
+3. Update `Casks/eska.rb` with the new version and the SHA256 of the published
+   macOS installer, then commit it to `main`
 
 ## Creating a Release
 
@@ -19,14 +21,16 @@ Before creating a release, ensure:
 - Code is linted (`pnpm lint`)
 - Application builds successfully (`pnpm build`)
 - Update version in `package.json` (e.g., `"version": "0.1.0"`)
-- Update version in `Casks/eska.rb` (e.g., `version "0.1.0"`)
+
+The version in `package.json` must match the tag you are about to create -- the
+release workflow fails fast if they disagree. `Casks/eska.rb` is updated
+automatically, so leave it alone.
 
 ### 2. Create a Git Tag
 
 ```bash
-# Update version in package.json and Casks/eska.rb
-# Then commit the changes
-git add package.json Casks/eska.rb
+# Update version in package.json, then commit the change
+git add package.json
 git commit -m "Bump version to 0.1.0"
 
 # Create a new version tag (e.g., v0.1.0)
@@ -60,13 +64,14 @@ Once the release is published:
 
 Check the [Actions tab](https://github.com/altescy/eska/actions) to monitor the build progress.
 
-### 6. Update Homebrew Users
+### 6. Homebrew Cask
 
-Once the release is published and artifacts are uploaded:
+Once the builds finish, the `update-cask` job downloads the published
+`Eska-Mac-{version}-Installer.dmg`, computes its SHA256, writes both the version
+and the checksum into `Casks/eska.rb`, and pushes the result to `main`.
 
-- Homebrew users will automatically see the new version when they run `brew upgrade --cask eska`
-- The Cask formula in `Casks/eska.rb` should already be updated (done in step 1)
-- No additional steps are needed for Homebrew distribution
+Since this repository is also the Homebrew tap (`altescy/eska`), nothing else is
+needed -- users get the new version on their next `brew upgrade --cask eska`.
 
 ## Versioning
 
@@ -117,6 +122,24 @@ If the Windows build fails:
 If the Linux build fails:
 - Check AppImage packaging requirements
 - Ensure all Linux dependencies are available
+
+### The release fails before building
+
+`Verify package.json matches the release tag` failed: the tag and the version in
+`package.json` disagree. electron-builder writes to `release/{package.json
+version}/`, so continuing would publish a release with no assets. Fix
+`package.json`, then re-create the tag and the release.
+
+### The cask was not updated
+
+The `update-cask` job pushes directly to `main` using `GITHUB_TOKEN`. If `main`
+is protected by required reviews or status checks, the push is rejected and the
+job fails after three attempts. Either allow GitHub Actions to bypass the
+protection, or update `Casks/eska.rb` by hand:
+
+```bash
+shasum -a 256 Eska-Mac-{version}-Installer.dmg
+```
 
 ## Manual Build (for testing)
 
