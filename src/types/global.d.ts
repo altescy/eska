@@ -1,5 +1,5 @@
 import * as MonacoAPI from "monaco-editor/esm/vs/editor/editor.api";
-import type { TunnelConfig, PortForwardStatus } from "./cluster";
+import type { PortForwardStatus, TunnelConfig } from "./cluster";
 
 declare global {
   type JSONValue = boolean | number | string | null | JsonValue[] | { [key: string]: JsonValue };
