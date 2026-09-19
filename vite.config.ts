@@ -4,7 +4,6 @@ import electron from 'vite-plugin-electron/simple'
 import renderer from 'vite-plugin-electron-renderer'
 import react from '@vitejs/plugin-react'
 import tailwindcss from "@tailwindcss/vite"
-import tsconfigPaths from "vite-tsconfig-paths"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,7 +13,6 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    tsconfigPaths(),
     electron({
       main: {
         // Shortcut of `build.lib.entry`.
@@ -23,14 +21,27 @@ export default defineConfig({
       preload: {
         // Shortcut of `build.rollupOptions.input`.
         // Preload scripts may contain Web assets, so use the `build.rollupOptions.input` instead `build.lib.entry`.
-        input: path.join(__dirname, 'electron/preload.ts'),
+        input: path.join(import.meta.dirname, 'electron/preload.ts'),
       },
     }),
     renderer(),
   ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+  build: {
+    // The Monaco editor alone is ~2.8 MB, so the default 500 kB warning is noise here.
+    chunkSizeWarningLimit: 3000,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "monaco", test: /node_modules[\\/](monaco-editor|monaco-vim|monaco-yaml|@monaco-editor)[\\/]/ },
+            { name: "react", test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
+          ],
+        },
+      },
     },
+  },
+  resolve: {
+    // Resolves the `@/*` alias from tsconfig.json.
+    tsconfigPaths: true,
   },
 })
