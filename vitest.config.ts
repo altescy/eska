@@ -1,5 +1,4 @@
 import { defineConfig } from "vitest/config";
-import path from "path";
 
 export default defineConfig({
   test: {
@@ -7,8 +6,7 @@ export default defineConfig({
     environment: "node",
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    // Resolves the `@/*` alias from tsconfig.json.
+    tsconfigPaths: true,
   },
 });
