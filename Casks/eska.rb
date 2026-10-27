@@ -1,6 +1,6 @@
 cask "eska" do
-  version "0.0.6"
-  sha256 "94f9200e480055b35cf4786df574153829f3e2ac6d93d4659629c753a83afe0e"
+  version "0.0.7"
+  sha256 "81391a07ded187fd1c71713c5bc7a9c0da36da0d87da72debf70743b6c7a7aa4"
 
   url "https://github.com/altescy/eska/releases/download/v#{version}/Eska-Mac-#{version}-Installer.dmg"
   name "Eska"
